@@ -6,6 +6,15 @@
       "source": "embedded",
       "dependencies": {}
     },
+    "com.missnibiru.ui": {
+      "version": "file:com.missnibiru.ui",
+      "depth": 0,
+      "source": "embedded",
+      "dependencies": {
+        "com.missnibiru.core": "0.1.0",
+        "com.unity.ugui": "2.0.0"
+      }
+    },
     "com.unity.ai.navigation": {
       "version": "2.0.12",
       "depth": 0,

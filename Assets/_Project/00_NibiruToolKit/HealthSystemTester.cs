@@ -5,44 +5,55 @@ using UnityEngine;
 public class HealthSystemTester : MonoBehaviour
 {
     [SerializeField, Min(0f)]
-    private float testAmount = 25f;
+    private float testValue;
 
-    private HealthComponent health;
+    [SerializeField]
+    private DamageCalculationMode calculationMode;
+
+    private HealthComponent _health;
 
     private void Awake()
     {
-        health = GetComponent<HealthComponent>();
+        _health = GetComponent<HealthComponent>();
     }
 
     private void OnEnable()
     {
-        health = GetComponent<HealthComponent>();
-        health.HealthChanged += OnHealthChanged;
-        health.Died += OnDied;
+        _health = GetComponent<HealthComponent>();
+        _health.HealthChanged += OnHealthChanged;
+        _health.Died += OnDied;
     }
 
     private void OnDisable()
     {
-        health.HealthChanged -= OnHealthChanged;
-        health.Died -= OnDied;
+        _health.HealthChanged -= OnHealthChanged;
+        _health.Died -= OnDied;
     }
 
-    [ContextMenu("Test/Take Damage")]
+    [ContextMenu("Test/Take Calculated Damage")]
     private void TestDamage()
     {
-        health.TakeDamage(testAmount);
+        float calculatedDamage = DamageCalculator.Calculate(
+            testValue,
+            calculationMode,
+            _health);
+
+        Debug.Log(
+            $"Calculated damage: {calculatedDamage} using {calculationMode}");
+
+        _health.TakeDamage(calculatedDamage);
     }
 
     [ContextMenu("Test/Heal")]
     private void TestHeal()
     {
-        health.Heal(testAmount);
+        _health.Heal(testValue);
     }
 
     [ContextMenu("Test/Reset Health")]
     private void TestReset()
     {
-        health.ResetHealth();
+        _health.ResetHealth();
     }
 
     private void OnHealthChanged(float currentHealth, float maxHealth)

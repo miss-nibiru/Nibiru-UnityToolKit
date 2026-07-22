@@ -1,0 +1,21 @@
+{
+  "name": "com.missnibiru.ui",
+  "version": "0.1.0",
+  "displayName": "Nibiru UI",
+  "description": "Reusable UI systems for Unity projects by Miss Nibiru.",
+  "unity": "6000.0",
+  "dependencies": {
+    "com.missnibiru.core": "0.1.0",
+    "com.unity.ugui": "2.0.0"
+  },
+  "author": {
+    "name": "Miss Nibiru",
+    "url": "https://github.com/miss-nibiru"
+  },
+  "keywords": [
+    "unity",
+    "toolkit",
+    "ui",
+    "health-bar"
+  ]
+}
