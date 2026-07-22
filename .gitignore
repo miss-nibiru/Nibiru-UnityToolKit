@@ -104,3 +104,12 @@ InitTestScene*.unity*
 
 # Auto-generated cache in Assets folder
 /[Aa]ssets/[Ss]ceneDependencyCache*
+
+# Rider and IDE-generated files
+.idea/
+
+# Ignore Unity Library folders at any level
+**/[Ll]ibrary/
+
+# Old temporary Unity project folder
+/NibiruToolKit/
