@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 83609564475bb44d2b11889c60c0c1b4, type: 3}
+  m_Name: SO_Enemy_SpawnData_Demo
+  m_EditorClassIdentifier: MissNibiru.Waves::MissNibiru.Waves.Data.WaveSpawnGroupData
+  prefab: {fileID: 4138848940024122892, guid: 2245b4524d0704f8595f09e27c49b14f, type: 3}
+  allowedPatterns: 0100000000000000
+  spawnPointTags: []
+  limitTotalSpawns: 1
+  totalSpawnLimit: 10
+  instancesPerSpawn: 2
+  limitActiveInstances: 0
+  maximumActiveInstances: 2
+  delayBetweenSpawns: 1
+  patternSpacing: 5
+  lineDirection: {x: 1, y: 0, z: 0}

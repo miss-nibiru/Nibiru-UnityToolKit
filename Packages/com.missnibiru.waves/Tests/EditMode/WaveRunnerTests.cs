@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using MissNibiru.Waves.Data;
 using MissNibiru.Waves.Execution;
 using MissNibiru.Waves.Spawning;
+using MissNibiru.Waves.Tracking;
 using NUnit.Framework;
 using UnityEditor;
 using UnityEngine;
@@ -205,7 +206,11 @@ namespace MissNibiru.Waves.Tests
                 1,
                 _spawner.SpawnedPoses.Count);
 
-            _spawner.Instances[0].SetActive(false);
+            WaveSpawnedObject trackedObject =
+                _spawner.Instances[0]
+                    .GetComponent<WaveSpawnedObject>();
+
+            trackedObject.Release();
 
             _runner.Tick(0f);
 
@@ -238,7 +243,11 @@ namespace MissNibiru.Waves.Tests
                 WaveRunnerState.WaitingForCompletion,
                 _runner.State);
 
-            _spawner.Instances[0].SetActive(false);
+            WaveSpawnedObject trackedObject =
+                _spawner.Instances[0]
+                    .GetComponent<WaveSpawnedObject>();
+
+            trackedObject.Release();
             _runner.Tick(0f);
 
             Assert.AreEqual(1, sequenceCompleted);

@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7e8095cf8a61e4b70837b024bdace906, type: 3}
+  m_Name: SO_DemoWave
+  m_EditorClassIdentifier: MissNibiru.Waves::MissNibiru.Waves.Data.WaveData
+  waveName: Demo Wave
+  usesDuration: 0
+  duration: 0
+  initialDelay: 1
+  spawnInterval: 0.25
+  waitForActiveObjectsToClear: 1
+  despawnActiveObjectsOnCompletion: 0
+  spawnGroups:
+  - {fileID: 11400000, guid: f5fd2813b804c45cd962c2172b37b1ba, type: 2}
