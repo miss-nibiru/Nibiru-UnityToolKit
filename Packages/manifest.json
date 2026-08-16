@@ -49,7 +49,8 @@
   },
     "testables": [
     "com.missnibiru.core",
-    "com.missnibiru.waves"
+    "com.missnibiru.waves",
+"com.missnibiru.enemies"
   ]
 
 }

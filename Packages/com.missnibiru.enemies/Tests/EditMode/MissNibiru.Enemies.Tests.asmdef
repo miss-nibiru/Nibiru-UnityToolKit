@@ -1,0 +1,24 @@
+{
+	"name": "MissNibiru.Enemies.Tests",
+	"rootNamespace": "MissNibiru.Enemies.Tests",
+	"references": [
+		"MissNibiru.Core",
+		"MissNibiru.Enemies"
+	],
+	"includePlatforms": [
+		"Editor"
+	],
+	"excludePlatforms": [],
+	"allowUnsafeCode": false,
+	"overrideReferences": false,
+	"precompiledReferences": [],
+	"autoReferenced": false,
+	"defineConstraints": [
+		"UNITY_INCLUDE_TESTS"
+	],
+	"versionDefines": [],
+	"noEngineReferences": false,
+	"optionalUnityReferences": [
+		"TestAssemblies"
+	]
+}

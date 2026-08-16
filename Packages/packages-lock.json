@@ -6,6 +6,14 @@
       "source": "embedded",
       "dependencies": {}
     },
+    "com.missnibiru.enemies": {
+      "version": "file:com.missnibiru.enemies",
+      "depth": 0,
+      "source": "embedded",
+      "dependencies": {
+        "com.missnibiru.core": "0.1.0"
+      }
+    },
     "com.missnibiru.ui": {
       "version": "file:com.missnibiru.ui",
       "depth": 0,

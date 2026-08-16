@@ -1,0 +1,16 @@
+{
+	"name": "MissNibiru.Enemies",
+	"rootNamespace": "MissNibiru.Enemies",
+	"references": [
+		"MissNibiru.Core"
+	],
+	"includePlatforms": [],
+	"excludePlatforms": [],
+	"allowUnsafeCode": false,
+	"overrideReferences": false,
+	"precompiledReferences": [],
+	"autoReferenced": true,
+	"defineConstraints": [],
+	"versionDefines": [],
+	"noEngineReferences": false
+}
