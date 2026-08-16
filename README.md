@@ -265,6 +265,10 @@ Development Build / stress scenario notes are here:
 
 [`Documentation~/DevelopmentBuildStressScenario.md`](Documentation~/DevelopmentBuildStressScenario.md)
 
+Final profiling / optimization write-up is here:
+
+[`Documentation~/OptimizationReport.md`](Documentation~/OptimizationReport.md)
+
 ## Unity version
 
 Built for Unity 6 (`6000.0+`).
