@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Text;
 using UnityEngine;
 
 namespace MissNibiru.Narrative
@@ -21,6 +22,13 @@ namespace MissNibiru.Narrative
 
         [SerializeField, TextArea(4, 10)]
         private string text = "New dialogue line.";
+
+        [SerializeField, HideInInspector]
+        private NarrativeTextSegment[] importedSegments =
+            System.Array.Empty<NarrativeTextSegment>();
+
+        [SerializeField, HideInInspector]
+        private bool useImportedSegments;
 
         [SerializeField, Min(1)]
         private int wordLimit = 60;
@@ -69,6 +77,9 @@ namespace MissNibiru.Narrative
         public NarrativeEmotion Emotion => emotion;
         public NarrativePortraitSide PortraitSide => portraitSide;
         public string Text => text ?? string.Empty;
+        public IReadOnlyList<NarrativeTextSegment> ImportedSegments =>
+            importedSegments ?? System.Array.Empty<NarrativeTextSegment>();
+        public bool UseImportedSegments => useImportedSegments;
         public int WordLimit => Mathf.Max(1, wordLimit);
         public float TypewriterSpeed => Mathf.Max(0f, typewriterSpeed);
         public bool AutoAdvance => autoAdvance;
@@ -84,6 +95,41 @@ namespace MissNibiru.Narrative
             nextNodeId = value ?? string.Empty;
         }
 
+        public void ConfigureImportedText(
+            string editorText,
+            NarrativeTextSegment[] segments)
+        {
+            text = editorText ?? string.Empty;
+            importedSegments = segments ??
+                System.Array.Empty<NarrativeTextSegment>();
+            useImportedSegments = importedSegments.Length > 0;
+        }
+
+        public void FlattenImportedText()
+        {
+            useImportedSegments = false;
+            importedSegments = System.Array.Empty<NarrativeTextSegment>();
+        }
+
+        public string ResolveText(NarrativeBlackboard blackboard)
+        {
+            if (!useImportedSegments || importedSegments == null ||
+                importedSegments.Length == 0)
+                return Text;
+
+            StringBuilder result = new StringBuilder();
+
+            foreach (NarrativeTextSegment segment in importedSegments)
+            {
+                if (segment == null || !segment.IsVisible(blackboard))
+                    continue;
+
+                result.Append(segment.Text);
+            }
+
+            return result.ToString().Trim();
+        }
+
         public override IEnumerable<string> GetOutgoingNodeIds()
         {
             if (!string.IsNullOrWhiteSpace(NextNodeId))
@@ -95,6 +141,8 @@ namespace MissNibiru.Narrative
             wordLimit = Mathf.Max(1, wordLimit);
             typewriterSpeed = Mathf.Max(0f, typewriterSpeed);
             autoAdvanceDelay = Mathf.Max(0f, autoAdvanceDelay);
+            importedSegments ??=
+                System.Array.Empty<NarrativeTextSegment>();
         }
     }
 }

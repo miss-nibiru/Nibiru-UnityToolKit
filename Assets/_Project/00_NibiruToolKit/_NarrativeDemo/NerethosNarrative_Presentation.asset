@@ -30,10 +30,10 @@ MonoBehaviour:
     width: 0.36
     height: 0.78
   dialogueBox:
-    x: 0.04
-    y: 0.03
-    width: 0.92
-    height: 0.3
+    x: 0
+    y: 0
+    width: 1
+    height: 0.4972638
   speakerName:
     x: 0.07
     y: 0.275

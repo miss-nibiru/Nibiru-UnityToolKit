@@ -1,4 +1,5 @@
 using System.Linq;
+using MissNibiru.Narrative;
 using MissNibiru.Narrative.Editor;
 using NUnit.Framework;
 using UnityEditor;

@@ -39,6 +39,34 @@ namespace MissNibiru.Narrative
         public string StringValue => stringValue ?? string.Empty;
         public string NextNodeId => nextNodeId ?? string.Empty;
 
+        public void ConfigureFlag(
+            NarrativeFlag target,
+            NarrativeMutation operation,
+            bool value)
+        {
+            flag = target;
+            variable = null;
+            mutation = operation;
+            booleanValue = value;
+        }
+
+        public void ConfigureVariable(
+            NarrativeVariable target,
+            NarrativeMutation operation,
+            bool valueBoolean,
+            int valueInteger,
+            float valueFloat,
+            string valueString)
+        {
+            variable = target;
+            flag = null;
+            mutation = operation;
+            booleanValue = valueBoolean;
+            integerValue = valueInteger;
+            floatValue = valueFloat;
+            stringValue = valueString ?? string.Empty;
+        }
+
         public void SetNextNodeId(string value)
         {
             nextNodeId = value ?? string.Empty;

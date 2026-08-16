@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using MissNibiru.Narrative;
 using UnityEditor.Experimental.GraphView;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -86,6 +87,8 @@ namespace MissNibiru.Narrative.Editor
                 return new Color(0.78f, 0.40f, 0.98f);
             if (node is NarrativeConditionNode)
                 return new Color(0.95f, 0.70f, 0.24f);
+            if (node is NarrativeRandomValueNode)
+                return new Color(0.35f, 0.82f, 0.86f);
             if (node is NarrativeEventNode)
                 return new Color(0.30f, 0.72f, 0.96f);
 
@@ -100,6 +103,14 @@ namespace MissNibiru.Narrative.Editor
                 return $"{choice.Choices.Count}/5 choices";
             if (node is NarrativeWaitNode wait)
                 return $"{wait.Duration:0.##} seconds";
+            if (node is NarrativeRandomValueNode randomValue)
+            {
+                return randomValue.Variable == null
+                    ? "No variable assigned"
+                    : $"{randomValue.Variable.DisplayName}: " +
+                      $"{randomValue.MinimumInclusive}-" +
+                      randomValue.MaximumInclusive;
+            }
             if (node is NarrativeEventNode eventNode)
             {
                 return eventNode.GameplayEvent == null

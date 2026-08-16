@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using MissNibiru.Narrative;
 
 namespace MissNibiru.Narrative.Editor
 {
@@ -16,6 +17,9 @@ namespace MissNibiru.Narrative.Editor
             CurrentNode as NarrativeLineNode;
         public NarrativeChoiceNode CurrentChoice =>
             CurrentNode as NarrativeChoiceNode;
+        public string CurrentText => CurrentLine == null
+            ? string.Empty
+            : CurrentLine.ResolveText(_blackboard);
         public IReadOnlyList<NarrativeChoiceOption> Choices => _choices;
         public string Error { get; private set; } = string.Empty;
         public bool IsComplete { get; private set; }
@@ -96,6 +100,26 @@ namespace MissNibiru.Narrative.Editor
                 {
                     _blackboard.Apply(setValue);
                     CurrentNode = _story.FindNode(setValue.NextNodeId);
+                }
+                else if (CurrentNode is NarrativeRandomValueNode randomValue)
+                {
+                    if (randomValue.Variable == null)
+                    {
+                        Error = "Random Value has no variable.";
+                        return;
+                    }
+
+                    int maximumExclusive = randomValue.MaximumInclusive ==
+                                           int.MaxValue
+                        ? int.MaxValue
+                        : randomValue.MaximumInclusive + 1;
+                    _blackboard.SetInteger(
+                        randomValue.Variable,
+                        UnityEngine.Random.Range(
+                            randomValue.MinimumInclusive,
+                            maximumExclusive));
+                    CurrentNode = _story.FindNode(
+                        randomValue.NextNodeId);
                 }
                 else if (CurrentNode is NarrativeEventNode eventNode)
                 {

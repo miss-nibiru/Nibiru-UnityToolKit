@@ -27,6 +27,17 @@ namespace MissNibiru.Narrative
                 : null;
         }
 
+        public void Configure(
+            string visiblePrompt,
+            NarrativeChoiceOption[] options)
+        {
+            prompt = visiblePrompt ?? string.Empty;
+            choices = options ?? Array.Empty<NarrativeChoiceOption>();
+
+            if (choices.Length > MaximumChoices)
+                Array.Resize(ref choices, MaximumChoices);
+        }
+
         public void SetChoiceTarget(int index, string targetNodeId)
         {
             NarrativeChoiceOption choice = GetChoice(index);

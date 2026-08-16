@@ -1,0 +1,23 @@
+MISS NIBIRU TWEE IMPORT REPORT
+
+Story: Nerethos
+Format: SugarCube 2.37.3
+Start: Chapter4_Start
+Passages: 86
+Variables: 13
+Flags: 12
+Generated nodes: 298
+Errors: 0
+Warnings: 0
+
+Review every warning before shipping.
+
+Information [Dreaming]: Audio setup requires Unity asset assignment.
+Information [StoryInit]: Audio setup requires Unity asset assignment.
+Information [Serena_Entry]: 8 links were divided into 2 five-choice pages.
+Information [Serena_Main]: 6 links were divided into 2 five-choice pages.
+Information [Serena_Room]: 7 links were divided into 2 five-choice pages.
+Information [Serena_Study]: 7 links were divided into 2 five-choice pages.
+Information [StoryCaption]: Twine HUD markup was not imported. Bind Unity UI to the generated variables instead.
+Information: Twee has no character asset references. Assign speakers, emotions and Unity audio clips after import.
+Information: Browser scripts and styles remain outside the Unity narrative graph.

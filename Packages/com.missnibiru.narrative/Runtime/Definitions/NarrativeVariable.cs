@@ -46,6 +46,26 @@ namespace MissNibiru.Narrative
             variableType = type;
         }
 
+        public void SetDefault(bool value)
+        {
+            defaultBoolean = value;
+        }
+
+        public void SetDefault(int value)
+        {
+            defaultInteger = value;
+        }
+
+        public void SetDefault(float value)
+        {
+            defaultFloat = value;
+        }
+
+        public void SetDefault(string value)
+        {
+            defaultString = value ?? string.Empty;
+        }
+
         private void OnValidate()
         {
             id = CleanId(id);

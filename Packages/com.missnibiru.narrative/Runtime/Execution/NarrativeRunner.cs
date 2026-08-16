@@ -234,6 +234,24 @@ namespace MissNibiru.Narrative
                     _blackboard.Apply(setValue);
                     SetCurrent(setValue.NextNodeId);
                 }
+                else if (_currentNode is NarrativeRandomValueNode randomValue)
+                {
+                    if (randomValue.Variable == null)
+                    {
+                        Fault("Random Value has no variable.");
+                        return;
+                    }
+
+                    int maximumExclusive = randomValue.MaximumInclusive ==
+                                           int.MaxValue
+                        ? int.MaxValue
+                        : randomValue.MaximumInclusive + 1;
+                    int value = UnityEngine.Random.Range(
+                        randomValue.MinimumInclusive,
+                        maximumExclusive);
+                    _blackboard.SetInteger(randomValue.Variable, value);
+                    SetCurrent(randomValue.NextNodeId);
+                }
                 else if (_currentNode is NarrativeEventNode eventNode)
                 {
                     eventNode.GameplayEvent?.Raise(eventNode.Payload);

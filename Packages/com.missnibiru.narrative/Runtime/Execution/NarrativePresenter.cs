@@ -246,7 +246,7 @@ namespace MissNibiru.Narrative
                 _voiceSource.Play();
             }
 
-            _completeText = line.Text;
+            _completeText = line.ResolveText(_runner.Blackboard);
             float speed = line.TypewriterSpeed > 0f
                 ? line.TypewriterSpeed
                 : _profile.DefaultTypewriterSpeed;
@@ -265,6 +265,19 @@ namespace MissNibiru.Narrative
 
             for (int i = 0; i < _completeText.Length; i++)
             {
+                if (_completeText[i] == '<')
+                {
+                    int tagEnd = _completeText.IndexOf('>', i);
+
+                    if (tagEnd >= i)
+                    {
+                        _body.text += _completeText.Substring(
+                            i, tagEnd - i + 1);
+                        i = tagEnd;
+                        continue;
+                    }
+                }
+
                 _body.text += _completeText[i];
 
                 if (voice != null && voice.TypingSound != null &&

@@ -17,6 +17,17 @@ Open **Tools > Miss Nibiru > Visual Novel Builder**.
 5. Arrange the player-facing UI in **Presentation**.
 6. Test the route in **Preview**, then run **Validation**.
 
+## Import a Twine story
+
+Select **Import Twee** and choose a SugarCube `.twee` file. The importer creates
+a new story, preserves passage positions, converts links and state logic, and
+writes a report beside the generated data. It never overwrites an existing
+story. Review the report before editing the imported graph.
+
+Twine HTML layout and browser audio paths are not Unity assets. Rebuild HUD
+markup with Unity UI and reconnect imported audio using `AudioClip` fields or
+gameplay events.
+
 ## Runtime setup
 
 1. Add `NarrativeRunner` and `NarrativePresenter` to one GameObject.
@@ -34,6 +45,19 @@ profile. You may assign an existing canvas if the game already owns one.
 Use `CreateSaveJson()` and `ResumeFromJson()` when the game owns its save file.
 For simple prototypes, use `SaveToPlayerPrefs(slot)` and
 `ResumeFromPlayerPrefs(slot)`.
+
+## Gameplay variables
+
+Narrative variables are generic and can power alchemy, reputation, relationship
+points or other game systems. Read and change them through the runner's
+blackboard, for example:
+
+```csharp
+int current = runner.Blackboard.GetInteger(alchemyCurrent);
+runner.Blackboard.AddInteger(alchemyCurrent, -1);
+```
+
+Subscribe to `VariableChanged` when a HUD must update immediately.
 
 ## Extension boundary
 

@@ -1,3 +1,4 @@
+using MissNibiru.Narrative;
 using UnityEditor;
 using UnityEngine;
 
@@ -27,8 +28,25 @@ namespace MissNibiru.Narrative.Editor
                 $"Words: {words}/{Mathf.Max(1, limit.intValue)}",
                 type);
 
-            if (serializedObject.ApplyModifiedProperties())
-                NarrativeEditorEvents.RequestGraphRefresh();
+            NarrativeLineNode line = target as NarrativeLineNode;
+            bool flatten = false;
+
+            if (line != null && line.UseImportedSegments)
+            {
+                EditorGUILayout.HelpBox(
+                    "Imported conditions control this text. Flatten it to edit as one unconditional line.",
+                    MessageType.Info);
+                flatten = GUILayout.Button("Flatten Imported Text");
+            }
+
+            serializedObject.ApplyModifiedProperties();
+
+            if (flatten)
+            {
+                Undo.RecordObject(line, "Flatten Imported Narrative Text");
+                line.FlattenImportedText();
+                EditorUtility.SetDirty(line);
+            }
         }
     }
 
@@ -47,6 +65,7 @@ namespace MissNibiru.Narrative.Editor
         public override void OnInspectorGUI()
         {
             serializedObject.Update();
+            bool structureChanged = false;
             EditorGUILayout.PropertyField(_prompt);
             EditorGUILayout.Space(4f);
             EditorGUILayout.LabelField(
@@ -67,11 +86,17 @@ namespace MissNibiru.Narrative.Editor
 
                 GUI.enabled = i > 0;
                 if (GUILayout.Button("↑", GUILayout.Width(26f)))
+                {
                     _choices.MoveArrayElement(i, i - 1);
+                    structureChanged = true;
+                }
 
                 GUI.enabled = i < _choices.arraySize - 1;
                 if (GUILayout.Button("↓", GUILayout.Width(26f)))
+                {
                     _choices.MoveArrayElement(i, i + 1);
+                    structureChanged = true;
+                }
 
                 GUI.enabled = true;
                 if (GUILayout.Button("×", GUILayout.Width(26f)))
@@ -88,6 +113,31 @@ namespace MissNibiru.Narrative.Editor
                 EditorGUILayout.PropertyField(limit);
                 EditorGUILayout.PropertyField(condition, true);
 
+                NarrativeChoiceNode choiceNode =
+                    target as NarrativeChoiceNode;
+                NarrativeChoiceOption model = choiceNode?.GetChoice(i);
+
+                if (model?.ImportedCondition != null &&
+                    !model.ImportedCondition.IsEmpty)
+                {
+                    EditorGUILayout.HelpBox(
+                        "Imported Twee condition active.",
+                        MessageType.Info);
+
+                    if (GUILayout.Button("Remove Imported Condition"))
+                    {
+                        SerializedProperty imported =
+                            choice.FindPropertyRelative(
+                                "importedCondition");
+                        SerializedProperty tokens = imported == null
+                            ? null
+                            : imported.FindPropertyRelative("tokens");
+
+                        if (tokens != null)
+                            tokens.arraySize = 0;
+                    }
+                }
+
                 int words = NarrativeValidator.CountWords(text.stringValue);
                 GUIStyle countStyle = new GUIStyle(EditorStyles.miniLabel);
                 countStyle.normal.textColor = words > limit.intValue
@@ -100,7 +150,10 @@ namespace MissNibiru.Narrative.Editor
             }
 
             if (removeIndex >= 0)
+            {
                 _choices.DeleteArrayElementAtIndex(removeIndex);
+                structureChanged = true;
+            }
 
             GUI.enabled = _choices.arraySize <
                           NarrativeChoiceNode.MaximumChoices;
@@ -116,11 +169,14 @@ namespace MissNibiru.Narrative.Editor
                 created.FindPropertyRelative("wordLimit").intValue = 12;
                 created.FindPropertyRelative("targetNodeId").stringValue =
                     string.Empty;
+                structureChanged = true;
             }
 
             GUI.enabled = true;
 
-            if (serializedObject.ApplyModifiedProperties())
+            serializedObject.ApplyModifiedProperties();
+
+            if (structureChanged)
                 NarrativeEditorEvents.RequestGraphRefresh();
         }
     }

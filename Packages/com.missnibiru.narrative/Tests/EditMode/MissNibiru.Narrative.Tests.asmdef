@@ -2,8 +2,8 @@
   "name": "MissNibiru.Narrative.Tests",
   "rootNamespace": "MissNibiru.Narrative.Tests",
   "references": [
-    "MissNibiru.Narrative",
-    "MissNibiru.Narrative.Editor"
+    "GUID:a61b9e76000000000000000000000038",
+    "GUID:a61b9e76000000000000000000000013"
   ],
   "includePlatforms": [
     "Editor"

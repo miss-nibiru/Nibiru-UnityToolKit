@@ -21,6 +21,9 @@ namespace MissNibiru.Narrative
             _variables =
                 new Dictionary<NarrativeVariable, RuntimeValue>();
 
+        public event Action<NarrativeFlag, bool> FlagChanged;
+        public event Action<NarrativeVariable> VariableChanged;
+
         public NarrativeBlackboard(NarrativeStory story)
         {
             if (story == null)
@@ -54,8 +57,126 @@ namespace MissNibiru.Narrative
 
         public void SetFlag(NarrativeFlag flag, bool value)
         {
-            if (flag != null)
-                _flags[flag] = value;
+            if (flag == null)
+                return;
+
+            bool changed = !_flags.TryGetValue(flag, out bool current) ||
+                           current != value;
+            _flags[flag] = value;
+
+            if (changed)
+                FlagChanged?.Invoke(flag, value);
+        }
+
+        public bool GetBoolean(NarrativeVariable variable)
+        {
+            return variable != null &&
+                   GetValue(variable).BooleanValue;
+        }
+
+        public int GetInteger(NarrativeVariable variable)
+        {
+            return variable == null ? 0 : GetValue(variable).IntegerValue;
+        }
+
+        public float GetFloat(NarrativeVariable variable)
+        {
+            return variable == null ? 0f : GetValue(variable).FloatValue;
+        }
+
+        public string GetString(NarrativeVariable variable)
+        {
+            return variable == null
+                ? string.Empty
+                : GetValue(variable).StringValue ?? string.Empty;
+        }
+
+        public void SetBoolean(NarrativeVariable variable, bool value)
+        {
+            if (variable == null ||
+                variable.VariableType != NarrativeVariableType.Boolean)
+            {
+                return;
+            }
+
+            RuntimeValue target = GetValue(variable);
+
+            if (target.BooleanValue == value)
+                return;
+
+            target.BooleanValue = value;
+            VariableChanged?.Invoke(variable);
+        }
+
+        public void SetInteger(NarrativeVariable variable, int value)
+        {
+            if (variable == null ||
+                variable.VariableType != NarrativeVariableType.Integer)
+            {
+                return;
+            }
+
+            RuntimeValue target = GetValue(variable);
+
+            if (target.IntegerValue == value)
+                return;
+
+            target.IntegerValue = value;
+            VariableChanged?.Invoke(variable);
+        }
+
+        public void SetFloat(NarrativeVariable variable, float value)
+        {
+            if (variable == null ||
+                variable.VariableType != NarrativeVariableType.Float)
+            {
+                return;
+            }
+
+            RuntimeValue target = GetValue(variable);
+
+            if (Math.Abs(target.FloatValue - value) <= 0.0001f)
+                return;
+
+            target.FloatValue = value;
+            VariableChanged?.Invoke(variable);
+        }
+
+        public void SetString(NarrativeVariable variable, string value)
+        {
+            if (variable == null ||
+                variable.VariableType != NarrativeVariableType.String)
+            {
+                return;
+            }
+
+            value ??= string.Empty;
+            RuntimeValue target = GetValue(variable);
+
+            if (target.StringValue == value)
+                return;
+
+            target.StringValue = value;
+            VariableChanged?.Invoke(variable);
+        }
+
+        public void AddInteger(NarrativeVariable variable, int amount)
+        {
+            if (variable != null &&
+                variable.VariableType == NarrativeVariableType.Integer)
+            {
+                SetInteger(variable, GetInteger(variable) + amount);
+            }
+
+        }
+
+        public void AddFloat(NarrativeVariable variable, float amount)
+        {
+            if (variable != null &&
+                variable.VariableType == NarrativeVariableType.Float)
+            {
+                SetFloat(variable, GetFloat(variable) + amount);
+            }
         }
 
         public bool Compare(
@@ -144,6 +265,8 @@ namespace MissNibiru.Narrative
                             : node.StringValue;
                     break;
             }
+
+            VariableChanged?.Invoke(node.Variable);
         }
 
         public NarrativeSaveData CreateSaveData(
@@ -218,6 +341,7 @@ namespace MissNibiru.Narrative
                 target.IntegerValue = saved.integerValue;
                 target.FloatValue = saved.floatValue;
                 target.StringValue = saved.stringValue ?? string.Empty;
+                VariableChanged?.Invoke(variable);
             }
         }
 

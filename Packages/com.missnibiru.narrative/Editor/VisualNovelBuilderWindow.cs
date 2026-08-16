@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using MissNibiru.Narrative;
 using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine;
@@ -17,6 +18,7 @@ namespace MissNibiru.Narrative.Editor
             Preview,
             Library,
             Validation,
+            StartHere,
             FAQ
         }
 
@@ -40,6 +42,7 @@ namespace MissNibiru.Narrative.Editor
         private ObjectField _storyField;
         private Vector2 _libraryScroll;
         private Vector2 _validationScroll;
+        private Vector2 _startHereScroll;
         private Vector2 _faqScroll;
         private bool _graphRefreshQueued;
 
@@ -164,6 +167,8 @@ namespace MissNibiru.Narrative.Editor
 
             bar.Add(CreateToolbarButton("New Story", CreateStory,
                 "Create story"));
+            bar.Add(CreateToolbarButton("Import Twee", ImportTwee,
+                "Import Twee file"));
             bar.Add(CreateToolbarButton("Locate", LocateStory,
                 "Find story asset"));
             bar.Add(CreateToolbarButton("Save", SaveAll,
@@ -212,6 +217,9 @@ namespace MissNibiru.Narrative.Editor
                 case BuilderTab.Validation:
                     AddGuiTab(DrawValidationTab);
                     break;
+                case BuilderTab.StartHere:
+                    AddGuiTab(DrawStartHereTab);
+                    break;
                 case BuilderTab.FAQ:
                     AddGuiTab(DrawFaqTab);
                     break;
@@ -232,9 +240,7 @@ namespace MissNibiru.Narrative.Editor
                 BuilderTab captured = tab;
                 Button button = new Button(() => ShowTab(captured))
                 {
-                    text = tab == BuilderTab.FAQ
-                        ? "FAQ"
-                        : ObjectNames.NicifyVariableName(tab.ToString())
+                    text = GetTabLabel(tab)
                 };
                 button.style.width = 112f;
                 button.style.height = 26f;
@@ -303,6 +309,7 @@ namespace MissNibiru.Narrative.Editor
             AddNodeButton<NarrativeChoiceNode>(palette, "Player Choice");
             AddNodeButton<NarrativeConditionNode>(palette, "Condition");
             AddNodeButton<NarrativeSetValueNode>(palette, "Set Value / Flag");
+            AddNodeButton<NarrativeRandomValueNode>(palette, "Random Value");
             AddNodeButton<NarrativeEventNode>(palette, "Gameplay Event");
             AddNodeButton<NarrativeWaitNode>(palette, "Wait");
             AddNodeButton<NarrativeEndNode>(palette, "End");
@@ -409,6 +416,62 @@ namespace MissNibiru.Narrative.Editor
 
             if (!string.IsNullOrWhiteSpace(path))
                 SetStory(NarrativeAssetFactory.CreateStory(path));
+        }
+
+        private void ImportTwee()
+        {
+            string sourcePath = EditorUtility.OpenFilePanel(
+                "Import SugarCube Twee",
+                string.Empty,
+                "twee");
+
+            if (string.IsNullOrWhiteSpace(sourcePath))
+                return;
+
+            string defaultName = Path.GetFileNameWithoutExtension(sourcePath);
+            string storyPath = EditorUtility.SaveFilePanelInProject(
+                "Save Imported Narrative Story",
+                defaultName,
+                "asset",
+                "The importer creates a new Story and never overwrites an existing one.");
+
+            if (string.IsNullOrWhiteSpace(storyPath))
+                return;
+
+            TweeImportResult result = TweeImportService.ImportFile(
+                sourcePath,
+                storyPath);
+
+            if (result.Story != null)
+                SetStory(result.Story);
+
+            string message = result.Story == null
+                ? "Twee import could not create a story."
+                : $"Imported {result.PassageCount} passages, " +
+                  $"{result.VariableCount} variables and " +
+                  $"{result.FlagCount} flags.\n\n" +
+                  $"{result.Count(TweeImportIssueSeverity.Error)} errors · " +
+                  $"{result.Count(TweeImportIssueSeverity.Warning)} warnings";
+            bool locateReport = EditorUtility.DisplayDialog(
+                result.Story == null
+                    ? "Twee Import Stopped"
+                    : "Twee Import Complete",
+                message,
+                string.IsNullOrWhiteSpace(result.ReportPath)
+                    ? "OK"
+                    : "Locate Report",
+                string.IsNullOrWhiteSpace(result.ReportPath)
+                    ? string.Empty
+                    : "Close");
+
+            if (locateReport &&
+                !string.IsNullOrWhiteSpace(result.ReportPath))
+            {
+                TextAsset report = AssetDatabase.LoadAssetAtPath<TextAsset>(
+                    result.ReportPath);
+                Selection.activeObject = report;
+                EditorGUIUtility.PingObject(report);
+            }
         }
 
         private void SetStory(NarrativeStory value)
@@ -697,7 +760,7 @@ namespace MissNibiru.Narrative.Editor
                 ? string.Empty
                 : line.Character.DisplayName;
             string body = line != null
-                ? line.Text
+                ? _preview.CurrentText
                 : _preview.CurrentChoice?.Prompt ?? string.Empty;
             GUI.Label(speakerRect, speaker, speakerStyle);
             GUI.Label(bodyRect, body, bodyStyle);
@@ -948,6 +1011,8 @@ namespace MissNibiru.Narrative.Editor
                 "No. Dialogue lines can connect directly to any next node.");
             DrawFaq("What are Flags and Variables?",
                 "Saved story state used by conditions and Set Value nodes.");
+            DrawFaq("Can variables power alchemy?",
+                "Yes. Gameplay can read, change and observe numeric variables.");
             DrawFaq("What is a Gameplay Event?",
                 "A ScriptableObject event channel that calls game logic.");
             DrawFaq("How do I connect nodes?",
@@ -958,11 +1023,78 @@ namespace MissNibiru.Narrative.Editor
                 "Each Choice node supports up to five visible options.");
             DrawFaq("How does saving work?",
                 "NarrativeRunner creates JSON and can store PlayerPrefs slots.");
+            DrawFaq("Can I import Twine?",
+                "Use Import Twee for SugarCube files, then review its report.");
             DrawFaq("How do I use it in-game?",
                 "Add NarrativeRunner and NarrativePresenter to one GameObject.");
             DrawFaq("Does preview fire events?",
                 "No. Editor preview skips gameplay events safely.");
             EditorGUILayout.EndScrollView();
+        }
+
+        private void DrawStartHereTab()
+        {
+            _startHereScroll = EditorGUILayout.BeginScrollView(
+                _startHereScroll);
+            EditorGUILayout.LabelField(
+                "Start Here · Creation Order",
+                EditorStyles.boldLabel);
+            EditorGUILayout.HelpBox(
+                "Follow these steps from top to bottom.",
+                MessageType.Info);
+
+            DrawGuideStep(
+                "1. Create the Story",
+                "Click New Story, or Import Twee to convert a SugarCube story.");
+            DrawGuideStep(
+                "2. Build the Library",
+                "Open Library. Create characters, emotions and optional audio, variables, flags or events.");
+            DrawGuideStep(
+                "3. Configure Characters",
+                "Select each Character asset. Add portraits for its emotions and an optional audio profile.");
+            DrawGuideStep(
+                "4. Add Dialogue",
+                "Open Flow. Add a Dialogue Line, select it and enter its speaker, emotion and text.");
+            DrawGuideStep(
+                "5. Connect the Path",
+                "Drag Start's Next port into the first line, then connect every line until an End node.");
+            DrawGuideStep(
+                "6. Add Optional Logic",
+                "Use Choice, Condition, Set Value, Gameplay Event or Wait nodes only where needed.");
+            DrawGuideStep(
+                "7. Design the Screen",
+                "Open Presentation. Select, drag and resize the dialogue, portraits and choices.");
+            DrawGuideStep(
+                "8. Test the Story",
+                "Open Preview, press Start Preview and follow every route and choice.");
+            DrawGuideStep(
+                "9. Validate and Save",
+                "Run Validation, repair every error, then click Save.");
+            DrawGuideStep(
+                "10. Use It In-Game",
+                "Add NarrativeRunner and NarrativePresenter to one GameObject, assign the Story and call StartStory().");
+
+            EditorGUILayout.EndScrollView();
+        }
+
+        private static void DrawGuideStep(string title, string instruction)
+        {
+            EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+            EditorGUILayout.LabelField(title, EditorStyles.boldLabel);
+            EditorGUILayout.LabelField(
+                instruction,
+                EditorStyles.wordWrappedLabel);
+            EditorGUILayout.EndVertical();
+        }
+
+        private static string GetTabLabel(BuilderTab tab)
+        {
+            if (tab == BuilderTab.FAQ)
+                return "FAQ";
+            if (tab == BuilderTab.StartHere)
+                return "Start Here";
+
+            return ObjectNames.NicifyVariableName(tab.ToString());
         }
 
         private static void DrawFaq(string question, string answer)

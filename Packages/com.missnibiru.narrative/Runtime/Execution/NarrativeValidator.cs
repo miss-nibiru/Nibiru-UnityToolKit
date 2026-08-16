@@ -154,6 +154,16 @@ namespace MissNibiru.Narrative
                         "NAR104", "Dialogue line is not connected.",
                         line, line);
                 }
+
+                foreach (NarrativeTextSegment segment in
+                         line.ImportedSegments)
+                {
+                    if (segment != null)
+                    {
+                        ValidateExpression(
+                            segment.Condition, line, issues);
+                    }
+                }
             }
             else if (node is NarrativeChoiceNode choice)
             {
@@ -202,6 +212,8 @@ namespace MissNibiru.Narrative
                     }
 
                     ValidateCondition(option.Condition, choice, issues);
+                    ValidateExpression(
+                        option.ImportedCondition, choice, issues);
                 }
             }
             else if (node is NarrativeConditionNode condition)
@@ -233,8 +245,31 @@ namespace MissNibiru.Narrative
                 if (string.IsNullOrWhiteSpace(setValue.NextNodeId))
                 {
                     Add(issues, NarrativeValidationSeverity.Error,
-                        "NAR131", "Set Value is not connected.",
+                    "NAR131", "Set Value is not connected.",
                         setValue, setValue);
+                }
+            }
+            else if (node is NarrativeRandomValueNode randomValue)
+            {
+                if (randomValue.Variable == null)
+                {
+                    Add(issues, NarrativeValidationSeverity.Error,
+                        "NAR135", "Random Value has no variable.",
+                        randomValue, randomValue);
+                }
+                else if (randomValue.Variable.VariableType !=
+                         NarrativeVariableType.Integer)
+                {
+                    Add(issues, NarrativeValidationSeverity.Error,
+                        "NAR136", "Random Value requires an integer variable.",
+                        randomValue, randomValue.Variable);
+                }
+
+                if (string.IsNullOrWhiteSpace(randomValue.NextNodeId))
+                {
+                    Add(issues, NarrativeValidationSeverity.Error,
+                        "NAR137", "Random Value is not connected.",
+                        randomValue, randomValue);
                 }
             }
             else if (node is NarrativeEventNode eventNode)
@@ -291,6 +326,26 @@ namespace MissNibiru.Narrative
             {
                 Add(issues, NarrativeValidationSeverity.Error,
                     "NAR122", "Condition variable is missing.", node, node);
+            }
+        }
+
+        private static void ValidateExpression(
+            NarrativeConditionExpression expression,
+            NarrativeNode node,
+            List<NarrativeValidationIssue> issues)
+        {
+            if (expression == null || expression.IsEmpty)
+                return;
+
+            foreach (NarrativeConditionExpressionToken token in
+                     expression.Tokens)
+            {
+                if (token != null &&
+                    token.TokenType ==
+                    NarrativeExpressionTokenType.Condition)
+                {
+                    ValidateCondition(token.Condition, node, issues);
+                }
             }
         }
 

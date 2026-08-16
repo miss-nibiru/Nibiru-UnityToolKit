@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using MissNibiru.Narrative;
 
 namespace MissNibiru.Narrative.Editor
 {
@@ -47,6 +48,8 @@ namespace MissNibiru.Narrative.Editor
                     : condition.FalseNodeId;
             if (node is NarrativeSetValueNode setValue)
                 return setValue.NextNodeId;
+            if (node is NarrativeRandomValueNode randomValue)
+                return randomValue.NextNodeId;
             if (node is NarrativeEventNode eventNode)
                 return eventNode.NextNodeId;
             if (node is NarrativeWaitNode wait)
@@ -75,6 +78,8 @@ namespace MissNibiru.Narrative.Editor
             }
             else if (node is NarrativeSetValueNode setValue)
                 setValue.SetNextNodeId(targetId);
+            else if (node is NarrativeRandomValueNode randomValue)
+                randomValue.SetNextNodeId(targetId);
             else if (node is NarrativeEventNode eventNode)
                 eventNode.SetNextNodeId(targetId);
             else if (node is NarrativeWaitNode wait)

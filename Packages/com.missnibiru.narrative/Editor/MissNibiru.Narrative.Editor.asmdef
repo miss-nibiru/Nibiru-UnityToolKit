@@ -2,7 +2,7 @@
   "name": "MissNibiru.Narrative.Editor",
   "rootNamespace": "MissNibiru.Narrative.Editor",
   "references": [
-    "MissNibiru.Narrative"
+    "GUID:a61b9e76000000000000000000000038"
   ],
   "includePlatforms": [
     "Editor"

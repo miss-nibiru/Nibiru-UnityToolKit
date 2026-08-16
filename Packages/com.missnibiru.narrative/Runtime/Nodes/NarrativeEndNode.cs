@@ -16,6 +16,12 @@ namespace MissNibiru.Narrative
         public string EndingId => endingId ?? string.Empty;
         public string Description => description ?? string.Empty;
 
+        public void Configure(string stableEndingId, string details = "")
+        {
+            endingId = stableEndingId ?? string.Empty;
+            description = details ?? string.Empty;
+        }
+
         public override IEnumerable<string> GetOutgoingNodeIds()
         {
             return Array.Empty<string>();

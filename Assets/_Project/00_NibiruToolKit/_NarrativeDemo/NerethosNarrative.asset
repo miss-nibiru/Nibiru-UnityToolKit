@@ -1,23 +1,6 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!114 &-9147087120569072601
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a61b9e76000000000000000000000043, type: 3}
-  m_Name: Event
-  m_EditorClassIdentifier: MissNibiru.Narrative::MissNibiru.Narrative.NarrativeEventNode
-  id: event_a8ea77ae
-  editorPosition: {x: 384.5, y: 321.5}
-  gameplayEvent: {fileID: 0}
-  payload: 
-  nextNodeId: 
---- !u!114 &-4910870182794583228
+--- !u!114 &-3526395251960016776
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -29,26 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a61b9e76000000000000000000000042, type: 3}
   m_Name: End
   m_EditorClassIdentifier: MissNibiru.Narrative::MissNibiru.Narrative.NarrativeEndNode
-  id: end_4eb9e519
-  editorPosition: {x: 479, y: 303}
+  id: end_d3c9d235
+  editorPosition: {x: 422, y: -56}
   endingId: complete
   description: 
---- !u!114 &-4351496201449975799
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a61b9e76000000000000000000000040, type: 3}
-  m_Name: Choice
-  m_EditorClassIdentifier: MissNibiru.Narrative::MissNibiru.Narrative.NarrativeChoiceNode
-  id: choice_31fbe304
-  editorPosition: {x: 289, y: 180}
-  prompt: Choose a response.
-  choices: []
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -73,10 +40,7 @@ MonoBehaviour:
   startNodeId: start_82f802c4
   nodes:
   - {fileID: 7154553827182122973}
-  - {fileID: -4910870182794583228}
-  - {fileID: 8269968214560218983}
-  - {fileID: -4351496201449975799}
-  - {fileID: -9147087120569072601}
+  - {fileID: -3526395251960016776}
 --- !u!114 &7154553827182122973
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -90,32 +54,5 @@ MonoBehaviour:
   m_Name: Start
   m_EditorClassIdentifier: MissNibiru.Narrative::MissNibiru.Narrative.NarrativeStartNode
   id: start_82f802c4
-  editorPosition: {x: 52, y: 81}
-  nextNodeId: line_91bc18fe
---- !u!114 &8269968214560218983
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a61b9e76000000000000000000000044, type: 3}
-  m_Name: Line
-  m_EditorClassIdentifier: MissNibiru.Narrative::MissNibiru.Narrative.NarrativeLineNode
-  id: line_91bc18fe
-  editorPosition: {x: 289, y: 81}
-  character: {fileID: 0}
-  emotion: {fileID: 0}
-  portraitSide: 0
-  text: New dialogue line.
-  wordLimit: 60
-  typewriterSpeed: 0
-  autoAdvance: 0
-  autoAdvanceDelay: 1
-  background: {fileID: 0}
-  music: {fileID: 0}
-  voiceClip: {fileID: 0}
-  soundEffect: {fileID: 0}
-  nextNodeId: 
+  editorPosition: {x: 152, y: -72}
+  nextNodeId: end_d3c9d235
