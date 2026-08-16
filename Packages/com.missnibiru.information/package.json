@@ -1,8 +1,8 @@
 {
   "name": "com.missnibiru.information",
-  "version": "0.1.0",
+  "version": "0.2.1",
   "displayName": "Nibiru Information Collection",
-  "description": "Reusable information, discovery, classification and collection systems by Miss Nibiru.",
+  "description": "Reusable information, discovery, classification, collection and editor authoring tools by Miss Nibiru.",
   "unity": "6000.0",
   "author": {
     "name": "Miss Nibiru",

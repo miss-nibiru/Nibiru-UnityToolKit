@@ -2,7 +2,8 @@
 	"name": "MissNibiru.Information.Tests",
 	"rootNamespace": "MissNibiru.Information.Tests",
 	"references": [
-		"MissNibiru.Information"
+		"MissNibiru.Information",
+		"MissNibiru.Information.Editor"
 	],
 	"includePlatforms": [
 		"Editor"
