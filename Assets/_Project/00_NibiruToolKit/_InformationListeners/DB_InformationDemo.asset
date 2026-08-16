@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fb67d12b0a8274433bfac2e25a8a45a3, type: 3}
-  m_Name: InformationDatabase
+  m_Name: DB_InformationDemo
   m_EditorClassIdentifier: MissNibiru.Information::MissNibiru.Information.Data.InformationDatabase
   entries:
-  - {fileID: 0}
+  - {fileID: 11400000, guid: 33681943fa13c4351b975c1d2f86cfc3, type: 2}

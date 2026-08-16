@@ -43,8 +43,7 @@ namespace MissNibiru.Information.Data
         [Header("Optional Related Asset")]
 
         [Tooltip(
-            "Optional asset represented by this information entry, " +
-            "such as a weapon, item or attack asset.")]
+            "Optional asset (weapon, item or attack)")]
         [SerializeField]
         private UnityEngine.Object relatedAsset;
 

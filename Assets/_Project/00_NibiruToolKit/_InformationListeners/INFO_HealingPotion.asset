@@ -10,14 +10,17 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 781c3d3df7c314d2782e353ef997e760, type: 3}
-  m_Name: InformationEntry
+  m_Name: INFO_HealingPotion
   m_EditorClassIdentifier: MissNibiru.Information::MissNibiru.Information.Data.InformationEntry
-  id: 
-  displayName: 
+  id: healing_potion
+  displayName: Healing Potion
   informationType: {fileID: 0}
-  category: {fileID: 0}
-  summary: 
+  category: {fileID: 11400000, guid: 9aade18f191104297aa175833f7ee89b, type: 2}
+  summary: Add a summary here
   icon: {fileID: 0}
   image: {fileID: 0}
-  pages: []
+  pages:
+  - heading: Page 1
+    body: Example page AA
+    image: {fileID: 0}
   relatedAsset: {fileID: 0}

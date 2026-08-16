@@ -12,6 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b14b1d7e4655244928896d37e83a2781, type: 3}
   m_Name: TYPE_Item
   m_EditorClassIdentifier: MissNibiru.Information::MissNibiru.Information.Data.InformationType
-  id: 
-  displayName: 
+  id: item
+  displayName: Item Demo
   icon: {fileID: 0}
