@@ -18,7 +18,13 @@ public static class AssignmentDevelopmentBuild
     [MenuItem("Tools/Miss Nibiru/Assignment/Build + Run Stress Development Build")]
     public static void BuildAndRunStressScenario()
     {
-        BuildStressScenario(autoRun: true);
+        BuildStressScenario(autoRun: true, connectProfiler: false);
+    }
+
+    [MenuItem("Tools/Miss Nibiru/Assignment/Build + Run Stress With Profiler")]
+    public static void BuildAndRunStressScenarioWithProfiler()
+    {
+        BuildStressScenario(autoRun: true, connectProfiler: true);
     }
 
     /// <summary>
@@ -29,10 +35,10 @@ public static class AssignmentDevelopmentBuild
     /// </summary>
     public static void BuildStressScenarioFromCommandLine()
     {
-        BuildStressScenario(autoRun: false);
+        BuildStressScenario(autoRun: false, connectProfiler: false);
     }
 
-    private static void BuildStressScenario(bool autoRun)
+    private static void BuildStressScenario(bool autoRun, bool connectProfiler)
     {
         if (!File.Exists(DemoScene))
         {
@@ -49,8 +55,12 @@ public static class AssignmentDevelopmentBuild
             Directory.CreateDirectory(directory);
 
         BuildOptions options = BuildOptions.Development;
+
         if (autoRun)
             options |= BuildOptions.AutoRunPlayer;
+
+        if (connectProfiler)
+            options |= BuildOptions.ConnectWithProfiler;
 
         BuildPlayerOptions buildOptions = new BuildPlayerOptions
         {
@@ -66,7 +76,8 @@ public static class AssignmentDevelopmentBuild
             $"target={target} " +
             $"scene={DemoScene} " +
             $"output={locationPathName} " +
-            $"stressDefine={StressDefine}");
+            $"stressDefine={StressDefine} " +
+            $"connectProfiler={connectProfiler}");
 
         BuildReport report = BuildPipeline.BuildPlayer(buildOptions);
         BuildSummary summary = report.summary;
