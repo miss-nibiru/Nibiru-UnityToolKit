@@ -1,0 +1,20 @@
+{
+  "name": "com.missnibiru.waves",
+  "version": "0.1.0",
+  "displayName": "Nibiru Waves",
+  "description": "Reusable data-driven wave and spawning systems by Miss Nibiru.",
+  "unity": "6000.0",
+  "dependencies": {
+    "com.missnibiru.core": "0.1.0"
+  },
+  "author": {
+    "name": "Miss Nibiru",
+    "url": "https://github.com/miss-nibiru"
+  },
+  "keywords": [
+    "unity",
+    "toolkit",
+    "waves",
+    "spawning"
+  ]
+}
