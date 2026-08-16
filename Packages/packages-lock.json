@@ -35,6 +35,14 @@
       "source": "embedded",
       "dependencies": {}
     },
+    "com.missnibiru.narrative": {
+      "version": "file:com.missnibiru.narrative",
+      "depth": 0,
+      "source": "embedded",
+      "dependencies": {
+        "com.unity.ugui": "2.0.0"
+      }
+    },
     "com.missnibiru.ui": {
       "version": "file:com.missnibiru.ui",
       "depth": 0,

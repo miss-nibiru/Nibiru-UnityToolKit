@@ -1,8 +1,9 @@
 {
   "dependencies": {
-    "com.missnibiru.core": "file:com.missnibiru.core",
     "com.missnibiru.combat": "file:com.missnibiru.combat",
+    "com.missnibiru.core": "file:com.missnibiru.core",
     "com.missnibiru.information": "file:com.missnibiru.information",
+    "com.missnibiru.narrative": "file:/Users/dulceherbst-aylesworth/Downloads/com.missnibiru.narrative-0.1.0.tgz",
     "com.unity.ai.navigation": "2.0.12",
     "com.unity.collab-proxy": "2.12.4",
     "com.unity.ide.rider": "3.0.39",
