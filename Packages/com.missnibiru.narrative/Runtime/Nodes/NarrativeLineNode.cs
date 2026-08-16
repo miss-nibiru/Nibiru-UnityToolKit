@@ -95,6 +95,31 @@ namespace MissNibiru.Narrative
             nextNodeId = value ?? string.Empty;
         }
 
+        public void ConfigureSpeaker(
+            NarrativeCharacter speaker,
+            NarrativeEmotion speakerEmotion,
+            NarrativePortraitSide side)
+        {
+            character = speaker;
+            emotion = speakerEmotion;
+            portraitSide = side;
+        }
+
+        public void ConfigureWordLimit(int maximumWords)
+        {
+            wordLimit = Mathf.Max(1, maximumWords);
+        }
+
+        public void ConfigureAudio(
+            AudioClip backgroundMusic,
+            AudioClip spokenVoice,
+            AudioClip effect)
+        {
+            music = backgroundMusic;
+            voiceClip = spokenVoice;
+            soundEffect = effect;
+        }
+
         public void ConfigureImportedText(
             string editorText,
             NarrativeTextSegment[] segments)

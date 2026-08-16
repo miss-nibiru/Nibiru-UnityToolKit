@@ -20,6 +20,16 @@ namespace MissNibiru.Narrative.Editor
         public int VariableCount { get; internal set; }
         public int FlagCount { get; internal set; }
         public int NodeCount { get; internal set; }
+        public int DialogueLineCount { get; internal set; }
+        public int NarratorLineCount { get; internal set; }
+        public int CharacterLineCount { get; internal set; }
+        public int CharacterCount { get; internal set; }
+        public int AudioDefinitionCount { get; internal set; }
+        public int AudioUsageCount { get; internal set; }
+        public int MappedAudioCount { get; internal set; }
+        public int UnmappedAudioCount { get; internal set; }
+        public int ChoiceNodeCount { get; internal set; }
+        public int ConditionNodeCount { get; internal set; }
         public List<TweeImportIssue> Issues { get; } =
             new List<TweeImportIssue>();
 
@@ -51,13 +61,32 @@ namespace MissNibiru.Narrative.Editor
             public TweePassageData Source;
             public Vector2 Position;
             public NarrativeNode Entry;
-            public NarrativeLineNode Line;
-            public readonly List<NarrativeNode> Prelude =
-                new List<NarrativeNode>();
+            public readonly List<NarrativeLineNode> Lines =
+                new List<NarrativeLineNode>();
             public readonly List<NarrativeChoiceNode> ChoicePages =
                 new List<NarrativeChoiceNode>();
             public readonly List<LinkBinding> Links =
                 new List<LinkBinding>();
+        }
+
+        private sealed class SpeakerResolution
+        {
+            public NarrativeCharacter Character;
+            public NarrativeEmotion Emotion;
+            public NarrativePortraitSide Side;
+        }
+
+        private sealed class PendingExit
+        {
+            public NarrativeNode Node;
+            public int OutputIndex;
+        }
+
+        private sealed class StepBuild
+        {
+            public NarrativeNode Entry;
+            public readonly List<PendingExit> Exits =
+                new List<PendingExit>();
         }
 
         private static readonly Regex ConditionSymbolRegex = new Regex(
@@ -72,6 +101,14 @@ namespace MissNibiru.Narrative.Editor
         public static TweeImportResult ImportFile(
             string sourceFilePath,
             string requestedStoryPath)
+        {
+            return ImportFile(sourceFilePath, requestedStoryPath, null);
+        }
+
+        public static TweeImportResult ImportFile(
+            string sourceFilePath,
+            string requestedStoryPath,
+            TweeImportProfile profile)
         {
             TweeImportResult result = new TweeImportResult();
 
@@ -116,7 +153,7 @@ namespace MissNibiru.Narrative.Editor
                     return result;
                 }
 
-                BuildAssets(data, requestedStoryPath, result);
+                BuildAssets(data, requestedStoryPath, profile, result);
             }
             catch (Exception exception)
             {
@@ -138,6 +175,7 @@ namespace MissNibiru.Narrative.Editor
         private static void BuildAssets(
             TweeStoryData data,
             string requestedStoryPath,
+            TweeImportProfile profile,
             TweeImportResult result)
         {
             string storyPath = AssetDatabase.GenerateUniqueAssetPath(
@@ -150,6 +188,7 @@ namespace MissNibiru.Narrative.Editor
                 CleanFileName(storyName) + "_TweeData");
             string variablesFolder = EnsureFolder(dataFolder, "Variables");
             string flagsFolder = EnsureFolder(dataFolder, "Flags");
+            string charactersFolder = EnsureFolder(dataFolder, "Characters");
 
             EditorUtility.DisplayProgressBar(
                 "Import Twee",
@@ -177,6 +216,13 @@ namespace MissNibiru.Narrative.Editor
                 variables);
             result.VariableCount = variables.Count;
             result.FlagCount = flags.Count;
+            Dictionary<string, SpeakerResolution> speakers =
+                ResolveSpeakers(
+                    story,
+                    data,
+                    profile,
+                    charactersFolder,
+                    result);
 
             NarrativeStartNode start = story.FindNode(
                 story.StartNodeId) as NarrativeStartNode;
@@ -226,8 +272,10 @@ namespace MissNibiru.Narrative.Editor
                     fallback,
                     flags,
                     variables,
+                    speakers,
+                    profile,
                     nodeIds,
-                    result.Issues);
+                    result);
                 builds.Add(passage.Name, build);
             }
 
@@ -262,14 +310,23 @@ namespace MissNibiru.Narrative.Editor
 
             result.PassageCount = passages.Count;
             result.NodeCount = story.Nodes.Count;
+            result.AudioDefinitionCount = data.AudioDefinitions
+                .Where(definition =>
+                    !string.IsNullOrWhiteSpace(definition.Key))
+                .Select(definition => definition.Key)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .Count();
             result.Issues.Add(new TweeImportIssue(
                 TweeImportIssueSeverity.Information,
                 "StoryCaption",
                 "Twine HUD markup was not imported. Bind Unity UI to the generated variables instead."));
-            result.Issues.Add(new TweeImportIssue(
-                TweeImportIssueSeverity.Information,
-                string.Empty,
-                "Twee has no character asset references. Assign speakers, emotions and Unity audio clips after import."));
+            if (result.UnmappedAudioCount > 0)
+            {
+                result.Issues.Add(new TweeImportIssue(
+                    TweeImportIssueSeverity.Warning,
+                    string.Empty,
+                    $"{result.UnmappedAudioCount} audio uses have no mapped Unity clip."));
+            }
             result.Issues.Add(new TweeImportIssue(
                 TweeImportIssueSeverity.Information,
                 string.Empty,
@@ -291,8 +348,10 @@ namespace MissNibiru.Narrative.Editor
             NarrativeEndNode fallback,
             IReadOnlyDictionary<string, NarrativeFlag> flags,
             IReadOnlyDictionary<string, NarrativeVariable> variables,
+            IReadOnlyDictionary<string, SpeakerResolution> speakers,
+            TweeImportProfile profile,
             HashSet<string> nodeIds,
-            List<TweeImportIssue> issues)
+            TweeImportResult result)
         {
             PassageBuild build = new PassageBuild
             {
@@ -301,48 +360,35 @@ namespace MissNibiru.Narrative.Editor
             };
             string passageId = UniqueNodeId(
                 CleanId(passage.Name), nodeIds);
+            List<PendingExit> pending = new List<PendingExit>();
+            int builtStepCount = 0;
 
-            build.Prelude.AddRange(CreateMutationNodes(
-                story,
-                passage.Mutations,
-                position + new Vector2(-260f, 0f),
-                passageId + "_enter",
-                passage.Name,
-                flags,
-                variables,
-                nodeIds,
-                issues));
-
-            if (passage.TextSegments.Count > 0)
+            foreach (TweePassageStepData sourceStep in passage.Steps
+                         .OrderBy(step => step.Order))
             {
-                NarrativeLineNode line =
-                    NarrativeAssetFactory.AddNode<NarrativeLineNode>(
-                        story, position, false);
-                SetNodeIdentity(line, passageId + "_line", passage.Name,
-                    position, nodeIds);
-                bool hasConditions = passage.TextSegments.Any(segment =>
-                    !string.IsNullOrWhiteSpace(segment.Condition));
-                NarrativeTextSegment[] importedSegments = hasConditions
-                    ? passage.TextSegments.Select(segment =>
-                    {
-                        NarrativeTextSegment imported =
-                            new NarrativeTextSegment();
-                        imported.Configure(
-                            segment.Text,
-                            TweeConditionCompiler.Compile(
-                                segment.Condition,
-                                flags,
-                                variables,
-                                issues,
-                                passage.Name));
-                        return imported;
-                    }).ToArray()
-                    : Array.Empty<NarrativeTextSegment>();
-                string editorText = string.Concat(
-                    passage.TextSegments.Select(segment => segment.Text))
-                    .Trim();
-                line.ConfigureImportedText(editorText, importedSegments);
-                build.Line = line;
+                StepBuild step = BuildOrderedStep(
+                    story,
+                    sourceStep,
+                    position + new Vector2(builtStepCount * 275f, 0f),
+                    passageId + "_step_" + (builtStepCount + 1),
+                    passage.Name,
+                    flags,
+                    variables,
+                    speakers,
+                    profile,
+                    nodeIds,
+                    result,
+                    build);
+
+                if (step == null || step.Entry == null)
+                    continue;
+
+                if (build.Entry == null)
+                    build.Entry = step.Entry;
+
+                ConnectExits(pending, step.Entry.Id);
+                pending = step.Exits;
+                builtStepCount++;
             }
 
             BuildChoicePages(
@@ -350,30 +396,166 @@ namespace MissNibiru.Narrative.Editor
                 passage,
                 build,
                 passageId,
+                builtStepCount,
                 flags,
                 variables,
                 nodeIds,
-                issues);
+                result.Issues);
+            result.ChoiceNodeCount += build.ChoicePages.Count;
 
-            NarrativeNode content = build.Line != null
-                ? (NarrativeNode)build.Line
-                : build.ChoicePages.Count > 0
-                    ? build.ChoicePages[0]
-                    : fallback;
+            NarrativeNode destination = build.ChoicePages.Count > 0
+                ? build.ChoicePages[0]
+                : fallback;
+            ConnectExits(pending, destination.Id);
 
-            if (build.Line != null)
+            if (build.Entry == null)
+                build.Entry = destination;
+
+            return build;
+        }
+
+        private static StepBuild BuildOrderedStep(
+            NarrativeStory story,
+            TweePassageStepData sourceStep,
+            Vector2 position,
+            string idPrefix,
+            string passage,
+            IReadOnlyDictionary<string, NarrativeFlag> flags,
+            IReadOnlyDictionary<string, NarrativeVariable> variables,
+            IReadOnlyDictionary<string, SpeakerResolution> speakers,
+            TweeImportProfile profile,
+            HashSet<string> nodeIds,
+            TweeImportResult result,
+            PassageBuild passageBuild)
+        {
+            NarrativeNode action;
+            string condition;
+
+            if (sourceStep.Kind == TweePassageStepKind.Dialogue)
             {
-                build.Line.SetNextNodeId(
-                    build.ChoicePages.Count > 0
-                        ? build.ChoicePages[0].Id
-                        : fallback.Id);
+                TweeTextSegmentData source = sourceStep.Dialogue;
+
+                if (source == null ||
+                    (profile != null && !profile.IncludeNarration &&
+                     string.IsNullOrWhiteSpace(source.Colour)))
+                {
+                    return null;
+                }
+
+                NarrativeLineNode line =
+                    NarrativeAssetFactory.AddNode<NarrativeLineNode>(
+                        story, position, false);
+                SetNodeIdentity(
+                    line,
+                    idPrefix + "_line",
+                    string.IsNullOrWhiteSpace(source.Colour)
+                        ? passage + " Narrator"
+                        : passage + " Dialogue",
+                    position,
+                    nodeIds);
+                line.ConfigureImportedText(
+                    source.Text,
+                    Array.Empty<NarrativeTextSegment>());
+                int configuredLimit = profile == null
+                    ? story.DefaultLineWordLimit
+                    : profile.DefaultWordLimit;
+                line.ConfigureWordLimit(configuredLimit);
+                ConfigureLineSpeaker(line, source, speakers);
+                ConfigureLineAudio(line, source.AudioKey, profile, result);
+                EditorUtility.SetDirty(line);
+                passageBuild.Lines.Add(line);
+                result.DialogueLineCount++;
+
+                if (line.Character == null)
+                    result.NarratorLineCount++;
+                else
+                    result.CharacterLineCount++;
+
+                action = line;
+                condition = source.Condition;
+            }
+            else
+            {
+                TweeMutationData source = sourceStep.Mutation;
+
+                if (source == null)
+                    return null;
+
+                action = CreateMutationNode(
+                    story,
+                    source,
+                    position,
+                    idPrefix,
+                    passage,
+                    flags,
+                    variables,
+                    nodeIds,
+                    result.Issues);
+                condition = source.Condition;
+
+                if (action == null)
+                    return null;
             }
 
-            ConnectLinear(build.Prelude, content.Id);
-            build.Entry = build.Prelude.Count > 0
-                ? build.Prelude[0]
-                : content;
-            return build;
+            StepBuild step = new StepBuild();
+
+            if (string.IsNullOrWhiteSpace(condition))
+            {
+                step.Entry = action;
+                step.Exits.Add(new PendingExit
+                {
+                    Node = action,
+                    OutputIndex = 0
+                });
+                return step;
+            }
+
+            NarrativeConditionNode conditionNode =
+                NarrativeAssetFactory.AddNode<NarrativeConditionNode>(
+                    story, position + new Vector2(-205f, -45f), false);
+            SetNodeIdentity(
+                conditionNode,
+                idPrefix + "_condition",
+                passage + " Condition",
+                conditionNode.EditorPosition,
+                nodeIds);
+            conditionNode.ConfigureImportedCondition(
+                TweeConditionCompiler.Compile(
+                    condition,
+                    flags,
+                    variables,
+                    result.Issues,
+                    passage));
+            conditionNode.SetTrueNodeId(action.Id);
+            EditorUtility.SetDirty(conditionNode);
+            result.ConditionNodeCount++;
+            step.Entry = conditionNode;
+            step.Exits.Add(new PendingExit
+            {
+                Node = action,
+                OutputIndex = 0
+            });
+            step.Exits.Add(new PendingExit
+            {
+                Node = conditionNode,
+                OutputIndex = 1
+            });
+            return step;
+        }
+
+        private static void ConnectExits(
+            IEnumerable<PendingExit> exits,
+            string targetId)
+        {
+            foreach (PendingExit exit in exits)
+            {
+                if (exit?.Node == null)
+                    continue;
+
+                NarrativeNodeConnectionUtility.SetTarget(
+                    exit.Node, exit.OutputIndex, targetId);
+                EditorUtility.SetDirty(exit.Node);
+            }
         }
 
         private static void BuildChoicePages(
@@ -381,6 +563,7 @@ namespace MissNibiru.Narrative.Editor
             TweePassageData passage,
             PassageBuild build,
             string passageId,
+            int contentStepCount,
             IReadOnlyDictionary<string, NarrativeFlag> flags,
             IReadOnlyDictionary<string, NarrativeVariable> variables,
             HashSet<string> nodeIds,
@@ -455,7 +638,8 @@ namespace MissNibiru.Narrative.Editor
                     NarrativeAssetFactory.AddNode<NarrativeChoiceNode>(
                         story,
                         build.Position + new Vector2(
-                            260f + pageIndex * 260f,
+                            Math.Max(1, contentStepCount) * 275f +
+                            pageIndex * 260f,
                             170f * pageIndex),
                         false);
                 SetNodeIdentity(
@@ -569,84 +753,269 @@ namespace MissNibiru.Narrative.Editor
             {
                 TweeMutationData source = mutations[i];
                 Vector2 nodePosition = position + new Vector2(i * 225f, 0f);
-
-                if (source.IsRandom)
-                {
-                    if (!variables.TryGetValue(
-                            source.VariableName,
-                            out NarrativeVariable randomVariable))
-                    {
-                        issues.Add(new TweeImportIssue(
-                            TweeImportIssueSeverity.Error,
-                            passage,
-                            $"Random assignment references unknown variable " +
-                            $"${source.VariableName}."));
-                        continue;
-                    }
-
-                    NarrativeRandomValueNode random =
-                        NarrativeAssetFactory.AddNode<
-                            NarrativeRandomValueNode>(
-                            story, nodePosition, false);
-                    SetNodeIdentity(
-                        random,
-                        idPrefix + "_random_" + (i + 1),
-                        "Random " + source.VariableName,
-                        nodePosition,
-                        nodeIds);
-                    random.Configure(
-                        randomVariable,
-                        source.RandomMinimum,
-                        source.RandomMaximum);
-                    result.Add(random);
-                    continue;
-                }
-
-                NarrativeSetValueNode node =
-                    NarrativeAssetFactory.AddNode<NarrativeSetValueNode>(
-                        story, nodePosition, false);
-                SetNodeIdentity(
-                    node,
-                    idPrefix + "_set_" + (i + 1),
-                    "Set " + source.VariableName,
+                NarrativeNode node = CreateMutationNode(
+                    story,
+                    source,
                     nodePosition,
-                    nodeIds);
-                NarrativeMutation operation = ToMutation(source.Operator);
+                    idPrefix + "_" + (i + 1),
+                    passage,
+                    flags,
+                    variables,
+                    nodeIds,
+                    issues);
 
-                if (flags.TryGetValue(
-                        source.VariableName, out NarrativeFlag flag))
-                {
-                    node.ConfigureFlag(
-                        flag,
-                        operation,
-                        ParseBoolean(source.RawValue));
+                if (node != null)
                     result.Add(node);
-                }
-                else if (variables.TryGetValue(
-                             source.VariableName,
-                             out NarrativeVariable variable))
-                {
-                    node.ConfigureVariable(
-                        variable,
-                        operation,
-                        ParseBoolean(source.RawValue),
-                        ParseInteger(source.RawValue),
-                        ParseFloat(source.RawValue),
-                        Unquote(source.RawValue));
-                    result.Add(node);
-                }
-                else
-                {
-                    UnityEngine.Object.DestroyImmediate(node, true);
-                    issues.Add(new TweeImportIssue(
-                        TweeImportIssueSeverity.Error,
-                        passage,
-                        $"Assignment references unknown variable " +
-                        $"${source.VariableName}."));
-                }
             }
 
             return result;
+        }
+
+        private static NarrativeNode CreateMutationNode(
+            NarrativeStory story,
+            TweeMutationData source,
+            Vector2 position,
+            string idPrefix,
+            string passage,
+            IReadOnlyDictionary<string, NarrativeFlag> flags,
+            IReadOnlyDictionary<string, NarrativeVariable> variables,
+            HashSet<string> nodeIds,
+            List<TweeImportIssue> issues)
+        {
+            if (source.IsRandom)
+            {
+                if (!variables.TryGetValue(
+                        source.VariableName,
+                        out NarrativeVariable randomVariable))
+                {
+                    issues.Add(new TweeImportIssue(
+                        TweeImportIssueSeverity.Error,
+                        passage,
+                        $"Random assignment references unknown variable " +
+                        $"${source.VariableName}."));
+                    return null;
+                }
+
+                NarrativeRandomValueNode random =
+                    NarrativeAssetFactory.AddNode<NarrativeRandomValueNode>(
+                        story, position, false);
+                SetNodeIdentity(
+                    random,
+                    idPrefix + "_random",
+                    "Random " + source.VariableName,
+                    position,
+                    nodeIds);
+                random.Configure(
+                    randomVariable,
+                    source.RandomMinimum,
+                    source.RandomMaximum);
+                EditorUtility.SetDirty(random);
+                return random;
+            }
+
+            NarrativeSetValueNode node =
+                NarrativeAssetFactory.AddNode<NarrativeSetValueNode>(
+                    story, position, false);
+            SetNodeIdentity(
+                node,
+                idPrefix + "_set",
+                "Set " + source.VariableName,
+                position,
+                nodeIds);
+            NarrativeMutation operation = ToMutation(source.Operator);
+
+            if (flags.TryGetValue(source.VariableName, out NarrativeFlag flag))
+            {
+                node.ConfigureFlag(
+                    flag,
+                    operation,
+                    ParseBoolean(source.RawValue));
+                EditorUtility.SetDirty(node);
+                return node;
+            }
+
+            if (variables.TryGetValue(
+                    source.VariableName,
+                    out NarrativeVariable variable))
+            {
+                node.ConfigureVariable(
+                    variable,
+                    operation,
+                    ParseBoolean(source.RawValue),
+                    ParseInteger(source.RawValue),
+                    ParseFloat(source.RawValue),
+                    Unquote(source.RawValue));
+                EditorUtility.SetDirty(node);
+                return node;
+            }
+
+            UnityEngine.Object.DestroyImmediate(node, true);
+            issues.Add(new TweeImportIssue(
+                TweeImportIssueSeverity.Error,
+                passage,
+                $"Assignment references unknown variable " +
+                $"${source.VariableName}."));
+            return null;
+        }
+
+        private static Dictionary<string, SpeakerResolution> ResolveSpeakers(
+            NarrativeStory story,
+            TweeStoryData data,
+            TweeImportProfile profile,
+            string charactersFolder,
+            TweeImportResult result)
+        {
+            Dictionary<string, SpeakerResolution> resolved =
+                new Dictionary<string, SpeakerResolution>(
+                    StringComparer.OrdinalIgnoreCase);
+            Dictionary<TweeSpeakerMapping, NarrativeCharacter> created =
+                new Dictionary<TweeSpeakerMapping, NarrativeCharacter>();
+            HashSet<NarrativeCharacter> used =
+                new HashSet<NarrativeCharacter>();
+            bool createPlaceholders = profile == null ||
+                                      profile.CreatePlaceholderCharacters;
+            string[] colours = data.Passages
+                .Where(passage => !passage.IsSpecial)
+                .SelectMany(passage => passage.TextSegments)
+                .Select(segment =>
+                    TweeImportProfile.NormalizeColour(segment.Colour))
+                .Where(colour => !string.IsNullOrWhiteSpace(colour))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+
+            foreach (string colour in colours)
+            {
+                TweeSpeakerMapping mapping = profile?.FindSpeaker(colour);
+                NarrativeCharacter character = mapping?.Character;
+
+                if (character == null && mapping != null &&
+                    created.TryGetValue(mapping, out NarrativeCharacter shared))
+                {
+                    character = shared;
+                }
+
+                if (character == null && createPlaceholders)
+                {
+                    string visibleName = mapping == null ||
+                                         string.IsNullOrWhiteSpace(
+                                             mapping.DisplayName)
+                        ? "Speaker " + colour.TrimStart('#')
+                        : mapping.DisplayName;
+                    character = NarrativeAssetFactory.CreateLibraryAsset<
+                        NarrativeCharacter>(
+                        charactersFolder + "/" +
+                        CleanFileName(visibleName) + ".asset",
+                        story);
+                    character.Configure(
+                        CleanId(visibleName),
+                        visibleName,
+                        ParseColour(colour));
+                    EditorUtility.SetDirty(character);
+
+                    if (mapping != null)
+                    {
+                        created[mapping] = character;
+                        mapping.SetCharacter(character);
+
+                        if (profile != null)
+                            EditorUtility.SetDirty(profile);
+                    }
+                }
+                else if (character != null)
+                {
+                    NarrativeAssetFactory.RegisterWithStory(story, character);
+                }
+
+                if (character == null)
+                {
+                    result.Issues.Add(new TweeImportIssue(
+                        TweeImportIssueSeverity.Warning,
+                        string.Empty,
+                        $"Colour {colour} has no character mapping."));
+                }
+                else
+                {
+                    used.Add(character);
+                }
+
+                resolved[colour] = new SpeakerResolution
+                {
+                    Character = character,
+                    Emotion = mapping?.Emotion,
+                    Side = mapping?.PortraitSide ?? NarrativePortraitSide.Left
+                };
+            }
+
+            result.CharacterCount = used.Count;
+            return resolved;
+        }
+
+        private static void ConfigureLineSpeaker(
+            NarrativeLineNode line,
+            TweeTextSegmentData source,
+            IReadOnlyDictionary<string, SpeakerResolution> speakers)
+        {
+            string colour = TweeImportProfile.NormalizeColour(source.Colour);
+
+            if (string.IsNullOrWhiteSpace(colour))
+            {
+                line.ConfigureSpeaker(null, null, NarrativePortraitSide.Left);
+                return;
+            }
+
+            if (speakers.TryGetValue(colour, out SpeakerResolution speaker))
+            {
+                line.ConfigureSpeaker(
+                    speaker.Character,
+                    speaker.Emotion,
+                    speaker.Side);
+            }
+        }
+
+        private static void ConfigureLineAudio(
+            NarrativeLineNode line,
+            string key,
+            TweeImportProfile profile,
+            TweeImportResult result)
+        {
+            if (string.IsNullOrWhiteSpace(key))
+                return;
+
+            result.AudioUsageCount++;
+            TweeAudioMapping mapping = profile?.FindAudio(key);
+
+            if (mapping?.Clip == null)
+            {
+                result.UnmappedAudioCount++;
+                return;
+            }
+
+            AudioClip music = null;
+            AudioClip voice = null;
+            AudioClip effect = null;
+
+            switch (mapping.Role)
+            {
+                case TweeAudioRole.Music:
+                    music = mapping.Clip;
+                    break;
+                case TweeAudioRole.SoundEffect:
+                    effect = mapping.Clip;
+                    break;
+                default:
+                    voice = mapping.Clip;
+                    break;
+            }
+
+            line.ConfigureAudio(music, voice, effect);
+            result.MappedAudioCount++;
+        }
+
+        private static Color ParseColour(string colour)
+        {
+            return ColorUtility.TryParseHtmlString(colour, out Color parsed)
+                ? parsed
+                : Color.white;
         }
 
         private static void ConnectLinear(
@@ -679,6 +1048,7 @@ namespace MissNibiru.Narrative.Editor
                         symbols,
                         mutation,
                         passage == initialization);
+                    AddConditionSymbols(symbols, mutation.Condition);
                 }
 
                 foreach (TweeLinkData link in passage.Links)
@@ -835,8 +1205,27 @@ namespace MissNibiru.Narrative.Editor
                 "Format: " + data.Format + " " + data.FormatVersion);
             report.AppendLine("Start: " + data.StartPassage);
             report.AppendLine("Passages: " + result.PassageCount);
+            report.AppendLine(
+                "Dialogue lines: " + result.DialogueLineCount);
+            report.AppendLine(
+                "Narrator lines: " + result.NarratorLineCount);
+            report.AppendLine(
+                "Character lines: " + result.CharacterLineCount);
+            report.AppendLine("Characters: " + result.CharacterCount);
             report.AppendLine("Variables: " + result.VariableCount);
             report.AppendLine("Flags: " + result.FlagCount);
+            report.AppendLine(
+                "Audio definitions: " + result.AudioDefinitionCount);
+            report.AppendLine(
+                "Audio uses: " + result.AudioUsageCount);
+            report.AppendLine(
+                "Mapped audio: " + result.MappedAudioCount);
+            report.AppendLine(
+                "Unmapped audio: " + result.UnmappedAudioCount);
+            report.AppendLine(
+                "Choice nodes: " + result.ChoiceNodeCount);
+            report.AppendLine(
+                "Condition nodes: " + result.ConditionNodeCount);
             report.AppendLine("Generated nodes: " + result.NodeCount);
             report.AppendLine(
                 "Errors: " + result.Count(TweeImportIssueSeverity.Error));

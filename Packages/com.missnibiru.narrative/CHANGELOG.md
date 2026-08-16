@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.3.0 - 2026-08-16
+
+- Added reusable `TweeImportProfile` assets for combined colour-to-character,
+  emotion and audio-key mappings.
+- Added a pre-import review with detected passages, lines, colours, choices,
+  mutations and audio keys.
+- Twee import now creates separate narrator and speaker lines, assigns every
+  mapped speaker, and safely creates placeholder character assets.
+- Passage content now generates ordered dialogue, condition and mutation nodes
+  instead of one flattened line per passage.
+- Added post-import character, dialogue, audio, choice, condition and node
+  counts to both the dialog and report.
+- Added graph search navigation, Frame All and a minimap.
+- Added realistic importer tests for combined speaker colours, emotions,
+  placeholders, audio detection and ordered node chains.
+
 ## 0.2.1 - 2026-08-16
 
 - Fixed Editor and test assembly references by pinning them to the Narrative

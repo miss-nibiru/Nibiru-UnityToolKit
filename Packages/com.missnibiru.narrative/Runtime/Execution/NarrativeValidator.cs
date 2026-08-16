@@ -225,6 +225,9 @@ namespace MissNibiru.Narrative
                         condition, condition);
                 }
 
+                ValidateExpression(
+                    condition.ImportedCondition, condition, issues);
+
                 if (string.IsNullOrWhiteSpace(condition.TrueNodeId) ||
                     string.IsNullOrWhiteSpace(condition.FalseNodeId))
                 {

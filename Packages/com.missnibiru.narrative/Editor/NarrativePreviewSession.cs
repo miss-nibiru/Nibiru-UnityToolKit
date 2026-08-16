@@ -90,8 +90,7 @@ namespace MissNibiru.Narrative.Editor
                 }
                 else if (CurrentNode is NarrativeConditionNode condition)
                 {
-                    bool result = condition.Condition == null ||
-                                  condition.Condition.Evaluate(_blackboard);
+                    bool result = condition.Evaluate(_blackboard);
                     CurrentNode = _story.FindNode(result
                         ? condition.TrueNodeId
                         : condition.FalseNodeId);

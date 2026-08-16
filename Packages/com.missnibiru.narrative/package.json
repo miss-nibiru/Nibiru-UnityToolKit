@@ -1,6 +1,6 @@
 {
   "name": "com.missnibiru.narrative",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "displayName": "Miss Nibiru Narrative",
   "description": "ScriptableObject narrative runtime and visual node-based authoring tool by Miss Nibiru.",
   "unity": "6000.0",

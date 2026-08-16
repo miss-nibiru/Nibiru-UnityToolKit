@@ -180,4 +180,43 @@ namespace MissNibiru.Narrative.Editor
                 NarrativeEditorEvents.RequestGraphRefresh();
         }
     }
+
+    [CustomEditor(typeof(NarrativeConditionNode))]
+    internal sealed class NarrativeConditionNodeEditor : UnityEditor.Editor
+    {
+        public override void OnInspectorGUI()
+        {
+            serializedObject.Update();
+            DrawPropertiesExcluding(
+                serializedObject,
+                "m_Script",
+                "id",
+                "editorPosition",
+                "importedCondition",
+                "trueNodeId",
+                "falseNodeId");
+            NarrativeConditionNode node = target as NarrativeConditionNode;
+
+            if (node?.ImportedCondition != null &&
+                !node.ImportedCondition.IsEmpty)
+            {
+                EditorGUILayout.HelpBox(
+                    "Imported Twee condition active.",
+                    MessageType.Info);
+
+                if (GUILayout.Button("Remove Imported Condition"))
+                {
+                    SerializedProperty imported = serializedObject
+                        .FindProperty("importedCondition");
+                    SerializedProperty tokens = imported?
+                        .FindPropertyRelative("tokens");
+
+                    if (tokens != null)
+                        tokens.arraySize = 0;
+                }
+            }
+
+            serializedObject.ApplyModifiedProperties();
+        }
+    }
 }

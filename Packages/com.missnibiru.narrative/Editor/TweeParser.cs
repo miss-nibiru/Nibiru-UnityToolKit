@@ -44,6 +44,8 @@ namespace MissNibiru.Narrative.Editor
         public string VariableName { get; set; } = string.Empty;
         public string Operator { get; set; } = "=";
         public string RawValue { get; set; } = string.Empty;
+        public string Condition { get; set; } = string.Empty;
+        public int Order { get; set; }
         public bool IsRandom { get; set; }
         public int RandomMinimum { get; set; }
         public int RandomMaximum { get; set; }
@@ -54,6 +56,7 @@ namespace MissNibiru.Narrative.Editor
         public string Text { get; set; } = string.Empty;
         public string Target { get; set; } = string.Empty;
         public string Condition { get; set; } = string.Empty;
+        public int Order { get; set; }
         public List<TweeMutationData> Mutations { get; } =
             new List<TweeMutationData>();
     }
@@ -62,6 +65,29 @@ namespace MissNibiru.Narrative.Editor
     {
         public string Text { get; set; } = string.Empty;
         public string Condition { get; set; } = string.Empty;
+        public string Colour { get; set; } = string.Empty;
+        public string AudioKey { get; set; } = string.Empty;
+        public int Order { get; set; }
+    }
+
+    public sealed class TweeAudioDefinitionData
+    {
+        public string Key { get; set; } = string.Empty;
+        public string SourcePath { get; set; } = string.Empty;
+    }
+
+    public enum TweePassageStepKind
+    {
+        Dialogue,
+        Mutation
+    }
+
+    public sealed class TweePassageStepData
+    {
+        public TweePassageStepKind Kind { get; set; }
+        public TweeTextSegmentData Dialogue { get; set; }
+        public TweeMutationData Mutation { get; set; }
+        public int Order { get; set; }
     }
 
     public sealed class TweePassageData
@@ -77,6 +103,10 @@ namespace MissNibiru.Narrative.Editor
             new List<TweeMutationData>();
         public List<TweeLinkData> Links { get; } =
             new List<TweeLinkData>();
+        public List<TweeAudioDefinitionData> AudioDefinitions { get; } =
+            new List<TweeAudioDefinitionData>();
+        public List<TweePassageStepData> Steps { get; } =
+            new List<TweePassageStepData>();
     }
 
     public sealed class TweeStoryData
@@ -89,6 +119,8 @@ namespace MissNibiru.Narrative.Editor
             new List<TweePassageData>();
         public List<TweeImportIssue> Issues { get; } =
             new List<TweeImportIssue>();
+        public List<TweeAudioDefinitionData> AudioDefinitions { get; } =
+            new List<TweeAudioDefinitionData>();
 
         public TweePassageData FindPassage(string name)
         {
@@ -131,6 +163,7 @@ namespace MissNibiru.Narrative.Editor
             public readonly List<TweeMutationData> Mutations =
                 new List<TweeMutationData>();
             public bool ContainsAudio;
+            public string AudioKey = string.Empty;
         }
 
         private static readonly Regex PassageHeaderRegex = new Regex(
@@ -160,6 +193,31 @@ namespace MissNibiru.Narrative.Editor
             "^goto\\s+(?:\"(?<double>.*?)\"|'(?<single>.*?)')",
             RegexOptions.Compiled | RegexOptions.IgnoreCase |
             RegexOptions.Singleline);
+
+        private static readonly Regex AudioMacroRegex = new Regex(
+            "^audio\\s+(?:\"(?<double>.*?)\"|'(?<single>.*?)')" +
+            "\\s+(?<command>[A-Za-z]+)",
+            RegexOptions.Compiled | RegexOptions.IgnoreCase |
+            RegexOptions.Singleline);
+
+        private static readonly Regex CacheAudioRegex = new Regex(
+            "^cacheaudio\\s+" +
+            "(?:\"(?<keyDouble>.*?)\"|'(?<keySingle>.*?)')\\s+" +
+            "(?:\"(?<pathDouble>.*?)\"|'(?<pathSingle>.*?)')",
+            RegexOptions.Compiled | RegexOptions.IgnoreCase |
+            RegexOptions.Singleline);
+
+        private static readonly Regex RunAudioDefinitionRegex = new Regex(
+            "^run\\s+setup\\.(?<key>[A-Za-z_][A-Za-z0-9_]*)\\s*=" +
+            "\\s*new\\s+Audio\\s*\\(\\s*" +
+            "(?:\"(?<double>.*?)\"|'(?<single>.*?)')\\s*\\)",
+            RegexOptions.Compiled | RegexOptions.IgnoreCase |
+            RegexOptions.Singleline);
+
+        private static readonly Regex RunAudioPlayRegex = new Regex(
+            "^run\\s+setup\\.(?<key>[A-Za-z_][A-Za-z0-9_]*)" +
+            "\\.play\\s*\\(\\s*\\)",
+            RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
         private static readonly Regex ColourElementRegex = new Regex(
             "(?is)<(?<tag>span|p)\\b[^>]*style\\s*=\\s*" +
@@ -211,6 +269,7 @@ namespace MissNibiru.Narrative.Editor
                 }
 
                 ParsePassageBody(passage, body, story.Issues);
+                story.AudioDefinitions.AddRange(passage.AudioDefinitions);
                 story.Passages.Add(passage);
             }
 
@@ -375,6 +434,8 @@ namespace MissNibiru.Narrative.Editor
         {
             List<ConditionFrame> conditions = new List<ConditionFrame>();
             MacroLinkContext macroLink = null;
+            string pendingAudioKey = string.Empty;
+            int sequence = 0;
             MatchCollection tokens = TokenRegex.Matches(body);
             int cursor = 0;
 
@@ -385,7 +446,9 @@ namespace MissNibiru.Narrative.Editor
                     AddText(
                         passage,
                         body.Substring(cursor, token.Index - cursor),
-                        CurrentCondition(conditions));
+                        CurrentCondition(conditions),
+                        ref pendingAudioKey,
+                        ref sequence);
                 }
 
                 string value = token.Value;
@@ -401,7 +464,10 @@ namespace MissNibiru.Narrative.Editor
                             issues);
 
                         if (link != null)
+                        {
+                            link.Order = sequence++;
                             passage.Links.Add(link);
+                        }
                     }
                 }
                 else
@@ -412,6 +478,8 @@ namespace MissNibiru.Narrative.Editor
                         macro,
                         conditions,
                         ref macroLink,
+                        ref pendingAudioKey,
+                        ref sequence,
                         issues);
                 }
 
@@ -423,7 +491,9 @@ namespace MissNibiru.Narrative.Editor
                 AddText(
                     passage,
                     body.Substring(cursor),
-                    CurrentCondition(conditions));
+                    CurrentCondition(conditions),
+                    ref pendingAudioKey,
+                    ref sequence);
             }
 
             if (macroLink != null)
@@ -442,14 +512,6 @@ namespace MissNibiru.Narrative.Editor
                     "An unclosed <<if>> block was closed during import."));
             }
 
-            for (int i = passage.TextSegments.Count - 1; i >= 0; i--)
-            {
-                TweeTextSegmentData segment = passage.TextSegments[i];
-                segment.Text = ConvertToUnityRichText(segment.Text);
-
-                if (string.IsNullOrWhiteSpace(segment.Text))
-                    passage.TextSegments.RemoveAt(i);
-            }
         }
 
         private static void ProcessMacro(
@@ -457,6 +519,8 @@ namespace MissNibiru.Narrative.Editor
             string macro,
             List<ConditionFrame> conditions,
             ref MacroLinkContext macroLink,
+            ref string pendingAudioKey,
+            ref int sequence,
             List<TweeImportIssue> issues)
         {
             string lower = macro.ToLowerInvariant();
@@ -527,12 +591,17 @@ namespace MissNibiru.Narrative.Editor
                     {
                         Text = ConvertToUnityRichText(macroLink.Text),
                         Target = macroLink.Target,
-                        Condition = macroLink.Condition
+                        Condition = macroLink.Condition,
+                        Order = sequence++
                     };
                     link.Mutations.AddRange(macroLink.Mutations);
                     passage.Links.Add(link);
                 }
-                else if (!macroLink.ContainsAudio)
+                else if (macroLink.ContainsAudio)
+                {
+                    pendingAudioKey = macroLink.AudioKey;
+                }
+                else
                 {
                     issues.Add(new TweeImportIssue(
                         TweeImportIssueSeverity.Warning,
@@ -550,7 +619,21 @@ namespace MissNibiru.Narrative.Editor
                     macro.Substring(4), passage.Name, issues);
 
                 if (macroLink == null)
+                {
+                    foreach (TweeMutationData mutation in parsed)
+                    {
+                        mutation.Condition = CurrentCondition(conditions);
+                        mutation.Order = sequence++;
+                        passage.Steps.Add(new TweePassageStepData
+                        {
+                            Kind = TweePassageStepKind.Mutation,
+                            Mutation = mutation,
+                            Order = mutation.Order
+                        });
+                    }
+
                     passage.Mutations.AddRange(parsed);
+                }
                 else
                     macroLink.Mutations.AddRange(parsed);
                 return;
@@ -572,27 +655,75 @@ namespace MissNibiru.Narrative.Editor
                     {
                         Text = "Continue",
                         Target = target,
-                        Condition = CurrentCondition(conditions)
+                        Condition = CurrentCondition(conditions),
+                        Order = sequence++
                     });
                 }
 
                 return;
             }
 
-            if (lower.StartsWith("audio "))
+            Match audioMatch = AudioMacroRegex.Match(macro);
+
+            if (audioMatch.Success)
             {
-                if (macroLink != null)
-                    macroLink.ContainsAudio = true;
+                string key = FirstValue(audioMatch, "double", "single");
+                string command = audioMatch.Groups["command"].Value;
+
+                if (command.Equals("play", StringComparison.OrdinalIgnoreCase) &&
+                    !key.StartsWith(":", StringComparison.Ordinal))
+                {
+                    if (macroLink != null)
+                    {
+                        macroLink.ContainsAudio = true;
+                        macroLink.AudioKey = key;
+                    }
+                    else
+                    {
+                        pendingAudioKey = key;
+                    }
+                }
+
                 return;
             }
 
-            if (lower.StartsWith("cacheaudio ") ||
-                lower.StartsWith("run "))
+            Match cacheAudio = CacheAudioRegex.Match(macro);
+
+            if (cacheAudio.Success)
             {
-                issues.Add(new TweeImportIssue(
-                    TweeImportIssueSeverity.Information,
-                    passage.Name,
-                    "Audio setup requires Unity asset assignment."));
+                passage.AudioDefinitions.Add(new TweeAudioDefinitionData
+                {
+                    Key = FirstValue(
+                        cacheAudio, "keyDouble", "keySingle"),
+                    SourcePath = FirstValue(
+                        cacheAudio, "pathDouble", "pathSingle")
+                });
+                return;
+            }
+
+            Match runDefinition = RunAudioDefinitionRegex.Match(macro);
+
+            if (runDefinition.Success)
+            {
+                passage.AudioDefinitions.Add(new TweeAudioDefinitionData
+                {
+                    Key = runDefinition.Groups["key"].Value,
+                    SourcePath = FirstValue(
+                        runDefinition, "double", "single")
+                });
+                return;
+            }
+
+            Match runPlay = RunAudioPlayRegex.Match(macro);
+
+            if (runPlay.Success)
+            {
+                pendingAudioKey = runPlay.Groups["key"].Value;
+                return;
+            }
+
+            if (lower.StartsWith("run "))
+            {
                 return;
             }
 
@@ -773,28 +904,90 @@ namespace MissNibiru.Narrative.Editor
         private static void AddText(
             TweePassageData passage,
             string text,
-            string condition)
+            string condition,
+            ref string pendingAudioKey,
+            ref int sequence)
         {
             if (string.IsNullOrWhiteSpace(text))
                 return;
 
-            if (passage.TextSegments.Count > 0)
-            {
-                TweeTextSegmentData previous =
-                    passage.TextSegments[passage.TextSegments.Count - 1];
+            MatchCollection coloured = ColourElementRegex.Matches(text);
+            int cursor = 0;
 
-                if (previous.Condition == condition)
+            foreach (Match match in coloured)
+            {
+                if (match.Index > cursor)
                 {
-                    previous.Text += text;
-                    return;
+                    AddDialogueBlocks(
+                        passage,
+                        text.Substring(cursor, match.Index - cursor),
+                        condition,
+                        string.Empty,
+                        ref pendingAudioKey,
+                        ref sequence);
                 }
+
+                AddDialogueBlocks(
+                    passage,
+                    match.Groups["body"].Value,
+                    condition,
+                    match.Groups["colour"].Value,
+                    ref pendingAudioKey,
+                    ref sequence);
+                cursor = match.Index + match.Length;
             }
 
-            passage.TextSegments.Add(new TweeTextSegmentData
+            if (cursor < text.Length)
             {
-                Text = text,
-                Condition = condition
-            });
+                AddDialogueBlocks(
+                    passage,
+                    text.Substring(cursor),
+                    condition,
+                    string.Empty,
+                    ref pendingAudioKey,
+                    ref sequence);
+            }
+        }
+
+        private static void AddDialogueBlocks(
+            TweePassageData passage,
+            string source,
+            string condition,
+            string colour,
+            ref string pendingAudioKey,
+            ref int sequence)
+        {
+            string converted = ConvertToUnityRichText(source);
+
+            if (string.IsNullOrWhiteSpace(converted))
+                return;
+
+            string[] blocks = Regex.Split(converted, @"\n{2,}");
+
+            foreach (string block in blocks)
+            {
+                string clean = block.Trim();
+
+                if (string.IsNullOrWhiteSpace(clean))
+                    continue;
+
+                TweeTextSegmentData dialogue = new TweeTextSegmentData
+                {
+                    Text = clean,
+                    Condition = condition ?? string.Empty,
+                    Colour = TweeImportProfile.NormalizeColour(colour),
+                    AudioKey = pendingAudioKey ?? string.Empty,
+                    Order = sequence++
+                };
+                pendingAudioKey = string.Empty;
+                passage.TextSegments.Add(dialogue);
+                passage.Steps.Add(new TweePassageStepData
+                {
+                    Kind = TweePassageStepKind.Dialogue,
+                    Dialogue = dialogue,
+                    Order = dialogue.Order
+                });
+            }
         }
 
         private static string CurrentCondition(

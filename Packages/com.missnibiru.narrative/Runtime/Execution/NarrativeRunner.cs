@@ -223,8 +223,7 @@ namespace MissNibiru.Narrative
                 }
                 else if (_currentNode is NarrativeConditionNode condition)
                 {
-                    bool result = condition.Condition == null ||
-                                  condition.Condition.Evaluate(_blackboard);
+                    bool result = condition.Evaluate(_blackboard);
                     SetCurrent(result
                         ? condition.TrueNodeId
                         : condition.FalseNodeId);

@@ -171,6 +171,136 @@ namespace MissNibiru.Narrative.Tests
                 Is.EqualTo(6));
         }
 
+        [Test]
+        public void Analyzer_ReportsRealisticGenerationSummary()
+        {
+            TweeImportAnalysis analysis = TweeImportAnalyzer.AnalyzeSource(
+                CreateRealisticSource());
+
+            Assert.That(analysis.PassageCount, Is.EqualTo(2));
+            Assert.That(analysis.DialogueLineCount, Is.EqualTo(4));
+            Assert.That(analysis.NarratorLineCount, Is.EqualTo(2));
+            Assert.That(analysis.CharacterLineCount, Is.EqualTo(2));
+            Assert.That(analysis.DetectedColours,
+                Is.EquivalentTo(new[] { "#F4A6B8", "#FF675E" }));
+            Assert.That(analysis.AudioDefinitionCount, Is.EqualTo(1));
+            Assert.That(analysis.AudioUsageCount, Is.EqualTo(1));
+            Assert.That(analysis.ChoiceCount, Is.EqualTo(1));
+            Assert.That(analysis.MutationCount, Is.EqualTo(2));
+        }
+
+        [Test]
+        public void Import_MapsCombinedColoursEmotionAndEverySpeakerLine()
+        {
+            File.WriteAllText(_sourcePath, CreateRealisticSource());
+            NarrativeCharacter serena =
+                NarrativeAssetFactory.CreateLibraryAsset<
+                    NarrativeCharacter>(
+                    TestFolder + "/Serena.asset");
+            serena.Configure("serena", "Serena", Color.magenta);
+            NarrativeEmotion worried =
+                NarrativeAssetFactory.CreateLibraryAsset<NarrativeEmotion>(
+                    TestFolder + "/Worried.asset");
+            worried.Configure("worried", "Worried");
+            TweeSpeakerMapping speaker = new TweeSpeakerMapping();
+            speaker.Configure(
+                "Serena",
+                new[] { "#FF675E", "#F4A6B8" },
+                serena,
+                worried,
+                NarrativePortraitSide.Right);
+            TweeAudioMapping voice = new TweeAudioMapping();
+            voice.Configure("serena_warning", null, TweeAudioRole.Voice);
+            TweeImportProfile profile =
+                NarrativeAssetFactory.CreateLibraryAsset<TweeImportProfile>(
+                    TestFolder + "/ImportProfile.asset");
+            profile.Configure(
+                "nerethos",
+                "Nerethos",
+                new[] { speaker },
+                new[] { voice });
+
+            TweeImportResult result = TweeImportService.ImportFile(
+                _sourcePath,
+                TestFolder + "/MappedStory.asset",
+                profile);
+            NarrativeLineNode[] characterLines = result.Story.Nodes
+                .OfType<NarrativeLineNode>()
+                .Where(line => line.Character != null)
+                .ToArray();
+
+            Assert.That(characterLines.Length, Is.EqualTo(2));
+            Assert.That(characterLines.All(line => line.Character == serena),
+                Is.True);
+            Assert.That(characterLines.All(line => line.Emotion == worried),
+                Is.True);
+            Assert.That(characterLines.All(line =>
+                line.PortraitSide == NarrativePortraitSide.Right), Is.True);
+            Assert.That(result.CharacterCount, Is.EqualTo(1));
+            Assert.That(result.NarratorLineCount, Is.EqualTo(2));
+            Assert.That(result.CharacterLineCount, Is.EqualTo(2));
+            Assert.That(result.AudioUsageCount, Is.EqualTo(1));
+            Assert.That(result.UnmappedAudioCount, Is.EqualTo(1));
+        }
+
+        [Test]
+        public void Import_PreservesOrderedDialogueConditionsAndMutations()
+        {
+            File.WriteAllText(_sourcePath, CreateRealisticSource());
+            TweeImportResult result = TweeImportService.ImportFile(
+                _sourcePath,
+                TestFolder + "/OrderedStory.asset");
+            NarrativeStartNode start = result.Story.FindNode(
+                result.Story.StartNodeId) as NarrativeStartNode;
+            NarrativeLineNode narrator = result.Story.Nodes
+                .OfType<NarrativeLineNode>()
+                .Single(line => line.Text == "Narrator first.");
+            NarrativeLineNode firstSpeaker = result.Story.Nodes
+                .OfType<NarrativeLineNode>()
+                .Single(line => line.Text.Contains("Stay close"));
+            NarrativeSetValueNode mutation = result.Story.Nodes
+                .OfType<NarrativeSetValueNode>()
+                .Single(node => node.Variable != null &&
+                    node.Variable.Id == "trust");
+            NarrativeConditionNode condition = result.Story.Nodes
+                .OfType<NarrativeConditionNode>()
+                .Single();
+            NarrativeLineNode conditionalLine = result.Story.Nodes
+                .OfType<NarrativeLineNode>()
+                .Single(line => line.Text.Contains("I mean it"));
+            NarrativeChoiceNode choice = result.Story.Nodes
+                .OfType<NarrativeChoiceNode>()
+                .Single();
+
+            Assert.That(start.NextNodeId, Is.EqualTo(narrator.Id));
+            Assert.That(narrator.NextNodeId, Is.EqualTo(firstSpeaker.Id));
+            Assert.That(firstSpeaker.NextNodeId, Is.EqualTo(mutation.Id));
+            Assert.That(mutation.NextNodeId, Is.EqualTo(condition.Id));
+            Assert.That(condition.TrueNodeId,
+                Is.EqualTo(conditionalLine.Id));
+            Assert.That(condition.FalseNodeId, Is.EqualTo(choice.Id));
+            Assert.That(conditionalLine.NextNodeId, Is.EqualTo(choice.Id));
+            Assert.That(result.ConditionNodeCount, Is.EqualTo(1));
+            Assert.That(result.ChoiceNodeCount, Is.EqualTo(1));
+        }
+
+        [Test]
+        public void Import_CreatesPlaceholderCharactersForUnknownColours()
+        {
+            File.WriteAllText(_sourcePath, CreateRealisticSource());
+
+            TweeImportResult result = TweeImportService.ImportFile(
+                _sourcePath,
+                TestFolder + "/PlaceholderStory.asset");
+
+            Assert.That(result.CharacterCount, Is.EqualTo(2));
+            Assert.That(result.Story.Characters.Count, Is.EqualTo(2));
+            Assert.That(result.Story.Nodes.OfType<NarrativeLineNode>()
+                .Where(line => line.Text.Contains("Stay close") ||
+                               line.Text.Contains("I mean it"))
+                .All(line => line.Character != null), Is.True);
+        }
+
         private static string CreateSource()
         {
             return ":: StoryTitle\n" +
@@ -189,6 +319,36 @@ namespace MissNibiru.Narrative.Tests
                    "<</if>>\n\n" +
                    ":: Ending {\"position\":\"400,200\"}\n" +
                    "The vial is empty.\n";
+        }
+
+        private static string CreateRealisticSource()
+        {
+            return ":: StoryTitle\nNerethos Import Test\n\n" +
+                   ":: StoryData\n" +
+                   "{\"format\":\"SugarCube\"," +
+                   "\"format-version\":\"2.37.3\"," +
+                   "\"start\":\"Start\"}\n\n" +
+                   ":: StoryInit\n" +
+                   "<<set $Trust = 0>>\n" +
+                   "<<set $Seen to false>>\n" +
+                   "<<cacheaudio \"serena_warning\" " +
+                   "\"audio/serena_warning.mp3\">>\n\n" +
+                   ":: Start {\"position\":\"100,200\"}\n" +
+                   "Narrator first.\n\n" +
+                   "<span class=\"voice-wrap\">" +
+                   "<<link \"Play\">>" +
+                   "<<audio \":playing\" stop>>" +
+                   "<<audio \"serena_warning\" play>>" +
+                   "<</link>></span>" +
+                   "<span style=\"color: #FF675E;\">" +
+                   "Stay close.</span>\n" +
+                   "<<set $Trust += 1>>\n" +
+                   "<<if $Trust gte 1>>" +
+                   "<span style=\"color: #F4A6B8;\">" +
+                   "I mean it.</span><</if>>\n" +
+                   "[[Continue|Ending][$Seen to true]]\n\n" +
+                   ":: Ending {\"position\":\"500,200\"}\n" +
+                   "Narrator last.\n";
         }
     }
 }

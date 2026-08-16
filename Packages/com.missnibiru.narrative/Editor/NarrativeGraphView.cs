@@ -16,6 +16,9 @@ namespace MissNibiru.Narrative.Editor
             new Dictionary<string, NarrativeNodeView>();
         private NarrativeStory _story;
         private bool _loading;
+        private string _lastQuery = string.Empty;
+        private int _navigationIndex = -1;
+        private readonly MiniMap _miniMap;
 
         public NarrativeGraphView(Action<NarrativeNode> selected)
         {
@@ -29,6 +32,12 @@ namespace MissNibiru.Narrative.Editor
             this.AddManipulator(new ContentDragger());
             this.AddManipulator(new SelectionDragger());
             this.AddManipulator(new RectangleSelector());
+            _miniMap = new MiniMap
+            {
+                anchored = true
+            };
+            _miniMap.SetPosition(new Rect(12f, 42f, 205f, 145f));
+            Add(_miniMap);
             graphViewChanged = HandleGraphViewChanged;
         }
 
@@ -36,7 +45,9 @@ namespace MissNibiru.Narrative.Editor
         {
             _loading = true;
             _story = story;
-            DeleteElements(graphElements.ToList());
+            DeleteElements(graphElements
+                .Where(element => element != _miniMap)
+                .ToList());
             _views.Clear();
 
             if (story != null)
@@ -58,6 +69,43 @@ namespace MissNibiru.Narrative.Editor
             }
 
             _loading = false;
+        }
+
+        public void FrameAllNodes()
+        {
+            schedule.Execute(_ => FrameAll());
+        }
+
+        public bool FocusMatch(string query, int direction)
+        {
+            string normalized = (query ?? string.Empty).Trim();
+
+            if (string.IsNullOrWhiteSpace(normalized))
+                return false;
+
+            List<NarrativeNodeView> matches = _views.Values
+                .Where(view => Matches(view.Model, normalized))
+                .OrderBy(view => view.Model.EditorPosition.y)
+                .ThenBy(view => view.Model.EditorPosition.x)
+                .ToList();
+
+            if (matches.Count == 0)
+                return false;
+
+            if (!string.Equals(
+                    _lastQuery, normalized, StringComparison.OrdinalIgnoreCase))
+            {
+                _navigationIndex = direction < 0 ? matches.Count : -1;
+                _lastQuery = normalized;
+            }
+
+            _navigationIndex = (_navigationIndex + direction + matches.Count) %
+                               matches.Count;
+            ClearSelection();
+            AddToSelection(matches[_navigationIndex]);
+            FrameSelection();
+            _selected?.Invoke(matches[_navigationIndex].Model);
+            return true;
         }
 
         public NarrativeNode GetSelectedNode()
@@ -108,6 +156,29 @@ namespace MissNibiru.Narrative.Editor
                 Edge edge = source.Outputs[i].ConnectTo(target.Input);
                 AddElement(edge);
             }
+        }
+
+        private static bool Matches(NarrativeNode node, string query)
+        {
+            if (node == null)
+                return false;
+
+            if (Contains(node.Id, query) ||
+                Contains(node.name, query) ||
+                Contains(node.NodeTitle, query))
+            {
+                return true;
+            }
+
+            return node is NarrativeLineNode line &&
+                   Contains(line.Text, query);
+        }
+
+        private static bool Contains(string source, string query)
+        {
+            return (source ?? string.Empty).IndexOf(
+                query,
+                StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
         private GraphViewChange HandleGraphViewChanged(

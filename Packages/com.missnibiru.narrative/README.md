@@ -19,14 +19,26 @@ Open **Tools > Miss Nibiru > Visual Novel Builder**.
 
 ## Import a Twine story
 
-Select **Import Twee** and choose a SugarCube `.twee` file. The importer creates
-a new story, preserves passage positions, converts links and state logic, and
-writes a report beside the generated data. It never overwrites an existing
-story. Review the report before editing the imported graph.
+Select **Import Twee** and choose a SugarCube `.twee` file. A review window
+shows exactly how many passages, narrator lines, character lines, choices,
+mutations, colours and audio keys were detected before anything is created.
+Select an existing `TweeImportProfile`, or create one from the review.
+
+An import profile can map several source colours to one character (for example,
+two Serena colours), assign an emotion and portrait side, and connect detected
+audio keys to Unity clips. Missing mapped characters can be created as safe
+placeholders automatically. Uncoloured text becomes narrator lines; coloured
+text becomes character lines. The importer preserves ordered dialogue,
+conditions and mutations as separate nodes, connects choices to their target
+passages, and writes a detailed report beside the generated data.
+
+Use **Find**, **Previous**, **Next**, **Frame All**, and the minimap in the Flow
+tab to navigate a large imported graph. Import always creates a new story and
+never overwrites an existing asset.
 
 Twine HTML layout and browser audio paths are not Unity assets. Rebuild HUD
-markup with Unity UI and reconnect imported audio using `AudioClip` fields or
-gameplay events.
+markup with Unity UI and map each detected audio key to an `AudioClip` in the
+import profile.
 
 ## Runtime setup
 

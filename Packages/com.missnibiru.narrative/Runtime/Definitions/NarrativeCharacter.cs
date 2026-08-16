@@ -79,6 +79,15 @@ namespace MissNibiru.Narrative
             displayName = visibleName ?? string.Empty;
         }
 
+        public void Configure(
+            string stableId,
+            string visibleName,
+            Color displayColour)
+        {
+            Configure(stableId, visibleName);
+            nameColour = displayColour;
+        }
+
         private void OnValidate()
         {
             id = CleanId(id);

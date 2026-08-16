@@ -10,6 +10,10 @@ namespace MissNibiru.Narrative
             new NarrativeCondition();
 
         [SerializeField, HideInInspector]
+        private NarrativeConditionExpression importedCondition =
+            new NarrativeConditionExpression();
+
+        [SerializeField, HideInInspector]
         private string trueNodeId = string.Empty;
 
         [SerializeField, HideInInspector]
@@ -17,6 +21,8 @@ namespace MissNibiru.Narrative
 
         public override string NodeTitle => "Condition";
         public NarrativeCondition Condition => condition;
+        public NarrativeConditionExpression ImportedCondition =>
+            importedCondition;
         public string TrueNodeId => trueNodeId ?? string.Empty;
         public string FalseNodeId => falseNodeId ?? string.Empty;
 
@@ -28,6 +34,21 @@ namespace MissNibiru.Narrative
         public void SetFalseNodeId(string value)
         {
             falseNodeId = value ?? string.Empty;
+        }
+
+        public void ConfigureImportedCondition(
+            NarrativeConditionExpression expression)
+        {
+            importedCondition = expression ??
+                new NarrativeConditionExpression();
+        }
+
+        public bool Evaluate(NarrativeBlackboard blackboard)
+        {
+            bool manual = condition == null || condition.Evaluate(blackboard);
+            bool imported = importedCondition == null ||
+                            importedCondition.Evaluate(blackboard);
+            return manual && imported;
         }
 
         public override IEnumerable<string> GetOutgoingNodeIds()

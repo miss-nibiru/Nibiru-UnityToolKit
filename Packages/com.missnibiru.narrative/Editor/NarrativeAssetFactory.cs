@@ -228,6 +228,8 @@ namespace MissNibiru.Narrative.Editor
                 flag.Configure(id, visibleName);
             else if (asset is NarrativeEvent gameplayEvent)
                 gameplayEvent.Configure(id, visibleName);
+            else if (asset is TweeImportProfile importProfile)
+                importProfile.Configure(id, visibleName);
         }
 
         private static string CreateNodeId(

@@ -266,6 +266,41 @@ namespace MissNibiru.Narrative.Editor
 
         private void BuildFlowTab()
         {
+            VisualElement column = new VisualElement();
+            column.style.flexGrow = 1f;
+            column.style.flexDirection = FlexDirection.Column;
+            VisualElement navigation = new VisualElement();
+            navigation.style.height = 30f;
+            navigation.style.flexDirection = FlexDirection.Row;
+            navigation.style.alignItems = Align.Center;
+            navigation.style.paddingLeft = 6f;
+            navigation.style.paddingRight = 6f;
+            navigation.style.backgroundColor =
+                new Color(0.12f, 0.095f, 0.15f);
+            Label findLabel = new Label("Find");
+            findLabel.style.width = 35f;
+            navigation.Add(findLabel);
+            TextField search = new TextField
+            {
+                tooltip = "Find imported nodes"
+            };
+            search.style.flexGrow = 1f;
+            search.style.maxWidth = 360f;
+            navigation.Add(search);
+            navigation.Add(CreateToolbarButton(
+                "Previous",
+                () => _graph?.FocusMatch(search.value, -1),
+                "Previous match"));
+            navigation.Add(CreateToolbarButton(
+                "Next",
+                () => _graph?.FocusMatch(search.value, 1),
+                "Next match"));
+            navigation.Add(CreateToolbarButton(
+                "Frame All",
+                () => _graph?.FrameAllNodes(),
+                "Show every node"));
+            column.Add(navigation);
+
             VisualElement row = new VisualElement();
             row.style.flexDirection = FlexDirection.Row;
             row.style.flexGrow = 1f;
@@ -287,7 +322,8 @@ namespace MissNibiru.Narrative.Editor
                 new Color(0.12f, 0.105f, 0.13f);
             row.Add(_inspectorRoot);
             RebuildInspector();
-            _body.Add(row);
+            column.Add(row);
+            _body.Add(column);
         }
 
         private VisualElement BuildNodePalette()
@@ -438,18 +474,31 @@ namespace MissNibiru.Narrative.Editor
             if (string.IsNullOrWhiteSpace(storyPath))
                 return;
 
+            TweeImportReviewDecision decision =
+                TweeImportReviewWindow.ShowReview(sourcePath);
+
+            if (!decision.Accepted)
+                return;
+
             TweeImportResult result = TweeImportService.ImportFile(
                 sourcePath,
-                storyPath);
+                storyPath,
+                decision.Profile);
 
             if (result.Story != null)
+            {
+                _tab = BuilderTab.Flow;
                 SetStory(result.Story);
+                _graph?.FrameAllNodes();
+            }
 
             string message = result.Story == null
                 ? "Twee import could not create a story."
-                : $"Imported {result.PassageCount} passages, " +
-                  $"{result.VariableCount} variables and " +
-                  $"{result.FlagCount} flags.\n\n" +
+                : $"Imported {result.PassageCount} passages and " +
+                  $"{result.DialogueLineCount} dialogue lines.\n" +
+                  $"{result.CharacterCount} characters · " +
+                  $"{result.AudioUsageCount} audio uses · " +
+                  $"{result.NodeCount} nodes\n\n" +
                   $"{result.Count(TweeImportIssueSeverity.Error)} errors · " +
                   $"{result.Count(TweeImportIssueSeverity.Warning)} warnings";
             bool locateReport = EditorUtility.DisplayDialog(
@@ -859,6 +908,7 @@ namespace MissNibiru.Narrative.Editor
             DrawCreateAssetButton<NarrativeVariable>("Variable");
             DrawCreateAssetButton<NarrativeFlag>("Story Flag");
             DrawCreateAssetButton<NarrativeEvent>("Gameplay Event");
+            DrawCreateAssetButton<TweeImportProfile>("Twee Import Profile");
             EditorGUILayout.EndHorizontal();
 
             if (_story != null)
@@ -1024,7 +1074,13 @@ namespace MissNibiru.Narrative.Editor
             DrawFaq("How does saving work?",
                 "NarrativeRunner creates JSON and can store PlayerPrefs slots.");
             DrawFaq("Can I import Twine?",
-                "Use Import Twee for SugarCube files, then review its report.");
+                "Use Import Twee, review detection, then confirm the profile.");
+            DrawFaq("What is an Import Profile?",
+                "Reusable colour, speaker, emotion and audio mappings.");
+            DrawFaq("Can two colours share a speaker?",
+                "Yes. Add both colours to one speaker mapping.");
+            DrawFaq("What are placeholder speakers?",
+                "Characters created safely for unmapped colours.");
             DrawFaq("How do I use it in-game?",
                 "Add NarrativeRunner and NarrativePresenter to one GameObject.");
             DrawFaq("Does preview fire events?",
