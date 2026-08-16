@@ -16,7 +16,7 @@ MonoBehaviour:
   columns: 20
   rows: 20
   gridPlane: 0
-  cellSize: 1
+  cellSize: 2
   activeEnemyBudget: 20
   waves:
   - waveName: EnemyWave_Demo1
@@ -92,11 +92,16 @@ MonoBehaviour:
       sequenceInterval: 0.25
       repetitions: 1
       repeatInterval: 1
-  - waveName: Wave 2
-    initialDelay: 0
-    usesDuration: 0
-    duration: 0
-    waitForActiveObjectsToClear: 1
-    autoProgress: 1
-    despawnActiveObjectsOnCompletion: 0
-    placements: []
+    - id: 046055fdea3c4d0aa67e0ec197ddb5a0
+      enabled: 1
+      spawnable: {fileID: 11400000, guid: 56c17d3d671854362bbbe77f8f9d071a, type: 2}
+      formation: {fileID: 0}
+      cell: {x: 4, y: 15}
+      rotation: 0
+      flipHorizontal: 0
+      flipVertical: 0
+      spawnDelay: 0
+      sequential: 0
+      sequenceInterval: 0.25
+      repetitions: 1
+      repeatInterval: 1

@@ -14,6 +14,12 @@
       "source": "embedded",
       "dependencies": {}
     },
+    "com.missnibiru.debugger": {
+      "version": "file:com.missnibiru.debugger",
+      "depth": 0,
+      "source": "embedded",
+      "dependencies": {}
+    },
     "com.missnibiru.enemies": {
       "version": "file:com.missnibiru.enemies",
       "depth": 0,
