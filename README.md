@@ -1,298 +1,243 @@
 # Nibiru Unity Toolkit
 
-Reusable Unity 6 gameplay systems and editor tools by Miss Nibiru.
+Hi! This is basically my little collection of Unity systems that I kept making over and over again, so I finally pulled them out of my projects and turned them into reusable packages.
 
-This repository is both a package workspace and a demonstration project. Reusable code lives under `Packages/com.missnibiru.*`; project-side demo assets live under `Assets/_Project/00_NibiruToolKit`, with the main integration demo scene under `Assets/_Project/02_Scenes/ToolkitDEMO_Scene.unity`.
+The idea is pretty simple: if I make another game and need health, projectiles, enemy movement, waves, information tracking, etc. I should not have to rebuild the whole thing from zero.
 
-The toolkit is designed so another Unity project can adopt one domain without inheriting the architecture of the game the system originally came from.
+Most of the reusable stuff lives in `Packages/com.missnibiru.*`.
 
-## Start here
+There is also a demo scene here:
 
-- Full architecture and divergence summary: [`Documentation~/FinalArchitectureSpecification.md`](Documentation~/FinalArchitectureSpecification.md)
-- Waves authoring specification: [`Packages/com.missnibiru.waves/Documentation~/WaveLayoutBuilderSpecification.md`](Packages/com.missnibiru.waves/Documentation~/WaveLayoutBuilderSpecification.md)
-- Toolkit Debugger specification: [`Packages/com.missnibiru.debugger/Documentation~/ToolkitDebuggerSpecification.md`](Packages/com.missnibiru.debugger/Documentation~/ToolkitDebuggerSpecification.md)
-- Development Build stress-test procedure/record: [`Documentation~/DevelopmentBuildStressScenario.md`](Documentation~/DevelopmentBuildStressScenario.md)
+`Assets/_Project/02_Scenes/ToolkitDEMO_Scene.unity`
 
-## Package map
+That is where I test a bunch of the systems together without making the packages depend on one specific game.
 
-### Nibiru Core — `com.missnibiru.core`
+## What is actually in here?
 
-Foundation systems that do not depend on another Miss Nibiru runtime package.
+### Core
+`com.missnibiru.core`
 
-#### Health
+This is the basic stuff that other systems can build on.
 
-Use for reusable health and damage contracts.
+**Health**
 
-Key types:
+There is a reusable `HealthComponent`, damage calculation, `IDamageable`, and `IHealthSource`.
 
-- `HealthComponent`
-- `IDamageable`
-- `IHealthSource`
-- `DamageCalculator`
-- `DamageCalculationMode`
+If I just need normal health, I use `HealthComponent`.
 
-**Extend it:** implement `IDamageable` when an object needs custom damage handling without using `HealthComponent`; implement `IHealthSource` when a custom health implementation needs to expose health state to reusable consumers such as UI.
+If a game needs something weird or custom, I can implement `IDamageable` or `IHealthSource` instead of rewriting the rest of the toolkit.
 
-#### Patterns
+**Patterns**
 
-Use for data-driven sequences of reusable tokens rather than hardcoded key combinations.
+This is for things like input patterns or sequences without hardcoding every combination into a script.
 
-Key types:
+It uses `PatternToken`, `PatternDefinition`, `PatternDatabase`, and `PatternResolver`.
 
-- `PatternToken`
-- `PatternDefinition`
-- `PatternDatabase`
-- `PatternResolver`
+To add more, I mostly just make new ScriptableObject tokens/patterns. The resolver does not need to care what game they came from.
 
-**Extend it:** create additional `PatternToken` and `PatternDefinition` ScriptableObjects. The resolver does not need to change when new sequences are added.
+**State Machine**
 
-#### State Machine
+The state machine is generic: `StateMachine<TContext>` + `IState<TContext>`.
 
-Use for project-defined states that share a context and lifecycle.
-
-Key types:
-
-- `IState<TContext>`
-- `StateMachine<TContext>`
-
-**Extend it:** define your own context class/struct and implement `IState<TContext>` for each new state. The state machine itself remains generic.
+So if I need a battle state machine, menu state machine, AI state machine, whatever, I make my own context + states and reuse the same machine.
 
 ---
 
-### Nibiru Combat — `com.missnibiru.combat`
+### Combat
+`com.missnibiru.combat`
 
-Reusable projectile attacks and damage-target resolution. Depends on Core.
+This is the projectile / attack side of the toolkit.
 
-#### Projectile attacks
+Instead of making a different firing script for every gun or enemy attack, I use `ProjectileAttackConfiguration` + `ProjectileAttackExecutor`.
 
-Use when several weapons/enemies share the same projectile execution rules but require different authored values.
+Things like spread, burst behaviour and attack values live in configuration instead of being copied into a bunch of scripts.
 
-Key types:
+For projectile spawning there is `IProjectileEmitter` and the default `PrefabProjectileEmitter`.
 
-- `ProjectileAttackConfiguration`
-- `ProjectileAttackExecutor`
-- `ProjectileSpreadMode`
+That interface is the important extension point: if later I want object pooling, networking, or some completely different spawning system, I can make another emitter without rewriting the attack executor.
 
-**Extend it:** create new attack configuration assets first. Only add executor logic when a new attack cannot be represented by configuration.
-
-#### Projectile emission and runtime
-
-Key types:
-
-- `IProjectileEmitter`
-- `PrefabProjectileEmitter`
-- `ProjectileSpawnRequest`
-- `ProjectileActor`
-- `DamageableResolver`
-
-**Extend it:** implement `IProjectileEmitter` to replace prefab instantiation with another spawning strategy such as pooling, networking, or a project factory. Implement `IDamageable` on new damage targets rather than editing projectile collision code.
+Damage still goes through the Core damage contracts, so Combat does not need its own second health system.
 
 ---
 
-### Nibiru Enemies — `com.missnibiru.enemies`
+### Enemies
+`com.missnibiru.enemies`
 
-Composable enemy lifecycle, movement, targeting, and attack behaviours. Depends on Core and Combat.
+This package is basically my attempt to stop making giant enemy scripts that do EVERYTHING.
 
-#### Enemy actor
+`EnemyActor` coordinates smaller behaviours instead.
 
-Key types:
+For movement there is `IEnemyMovementBehaviour`.
 
-- `EnemyActor`
-- `EnemyContext`
+Already included:
 
-The actor coordinates independently replaceable behaviours instead of containing every enemy rule in one controller.
+- Stationary
+- Chase
+- Patrol
+- Formation
 
-#### Movement
+If I suddenly need an enemy that orbits the player, flees, follows a spline, uses NavMesh, etc. I just make another movement behaviour.
 
-Contract:
+Attacks work the same way through `IEnemyAttackBehaviour`.
 
-- `IEnemyMovementBehaviour`
+Target selection goes through `IEnemyTargetProvider`, so targeting can also be swapped without rewriting the actual enemy.
 
-Included behaviours:
-
-- `StationaryMovement`
-- `ChaseMovement`
-- `PatrolMovement`
-- `FormationMovement`
-
-**Extend it:** implement `IEnemyMovementBehaviour` for a new movement style such as flee, orbit, spline, navmesh, or boss-specific movement.
-
-#### Attacks
-
-Contract:
-
-- `IEnemyAttackBehaviour`
-
-Included behaviours include contact damage and projectile attacks.
-
-**Extend it:** implement `IEnemyAttackBehaviour`. Reuse Nibiru Combat for normal projectile attacks instead of creating a second projectile framework.
-
-#### Targeting
-
-Contract:
-
-- `IEnemyTargetProvider`
-
-Default implementation:
-
-- `TransformTargetProvider`
-
-**Extend it:** implement another provider for nearest-target selection, threat, teams, dynamic player selection, or other targeting policy.
+Basically: new enemy idea = combine/replace behaviours instead of making another giant controller.
 
 ---
 
-### Nibiru Information — `com.missnibiru.information`
+### Information
+`com.missnibiru.information`
 
-Generic authored information and collection tracking for clues, evidence, codices, lore, discoveries, tutorials, or other player knowledge.
+This started from evidence / clue systems, but I did not want it trapped inside one detective game forever.
 
-#### Authored data
+Now it is generic information that the player can discover and collect.
 
-Key types:
+So it can be used for:
 
-- `InformationEntry`
-- `InformationPage`
-- `InformationCategory`
-- `InformationType`
-- `InformationDatabase`
+- clues
+- evidence
+- lore
+- codex entries
+- tutorials
+- discoveries
+- basically anything the player can "learn"
 
-**Extend it:** add information/category/type assets. Presentation is intentionally separate, so another project can display the same information model through its own UI.
+The authored side uses things like `InformationEntry`, `InformationPage`, `InformationCategory`, `InformationType`, and `InformationDatabase`.
 
-#### Collection state
+Collection state uses `InformationCollection`.
 
-Key types:
+The big extension point here is `IInformationCollectionStore`.
 
-- `InformationCollection`
-- `InformationCollectionResult`
-- `IInformationCollectionStore`
-- `InMemoryInformationCollectionStore`
+The toolkit includes an in-memory store, but another game can connect it to its own save system, PlayerPrefs, cloud save, etc. without changing how collecting information works.
 
-**Extend it:** implement `IInformationCollectionStore` to connect collection state to a save file, PlayerPrefs, cloud data, or another project save service.
-
-#### Unity integration and organizer
-
-Key types/components include:
-
-- `InformationCollectionComponent`
-- `InformationSource`
-- Information Organizer editor window/validator utilities
-
-**Extend it:** use the runtime API directly or place the Unity bridge components in scenes. Interaction, dialogue, audio, and quest consequences remain project-owned.
+There is also an Information Organizer editor tool for actually working with the assets without digging through folders forever.
 
 ---
 
-### Nibiru Waves — `com.missnibiru.waves`
+### Waves
+`com.missnibiru.waves`
 
-Reusable runtime wave spawning plus grid-based encounter authoring.
+This handles wave spawning and encounter layouts.
 
-Key runtime types:
+You can do normal runtime waves with `WaveData` / `WaveRunner`, or author encounters visually using `WaveLayoutData` and the Wave Layout Builder.
 
-- `WaveData`
-- `WaveSpawnGroupData`
-- `WaveRunner`
-- `IWaveSpawner`
-- `WaveSpawner`
-- `ISpawnPointProvider`
-- `GridSpawnPointProvider`
-- `TransformSpawnPointProvider`
+Open it here:
 
-Key layout types:
+**Tools > Miss Nibiru > Wave Layout Builder**
 
-- `WaveLayoutData`
-- `SpawnCatalog`
-- `SpawnableDefinition`
-- `SpawnFormationDefinition`
-- `WaveLayoutCalculator`
-- `WaveLayoutCompiler`
-- `WaveSpawnedObject`
+The layout side lets me place spawnables on a grid, make formations, set timing, repeat placements, and preview encounters before running the game.
 
-Editor tools:
+Useful extension points:
 
-- **Tools > Miss Nibiru > Wave Layout Builder**
-- Formation Designer through the Waves authoring workflow
+- `ISpawnPointProvider` if a game needs a different way to choose spawn positions
+- `IWaveSpawner` if spawning itself needs to work differently
+- `SpawnableDefinition` for new things that can spawn
+- `SpawnFormationDefinition` for reusable formations
 
-**Extend it:** implement `ISpawnPointProvider` for a new positioning strategy, implement `IWaveSpawner` for another spawning backend, add `SpawnableDefinition` assets for new content, and add `SpawnFormationDefinition` assets for reusable formations.
+The Waves package only worries about waves/spawning. It does NOT own enemy AI, doors, cameras, room progression, etc. That stuff belongs to the actual game.
 
-The package deliberately does not own enemy AI, room doors, cameras, or game progression.
+More details are here:
+
+[`Packages/com.missnibiru.waves/Documentation~/WaveLayoutBuilderSpecification.md`](Packages/com.missnibiru.waves/Documentation~/WaveLayoutBuilderSpecification.md)
 
 ---
 
-### Nibiru UI — `com.missnibiru.ui`
+### UI
+`com.missnibiru.ui`
 
-Reusable UI components that bind to toolkit contracts instead of specific game actors. Depends on Core and Unity UI.
+This is the smallest package right now.
 
-Current component:
+At the moment it mainly has reusable health UI through `HealthBarUI`.
 
-- `HealthBarUI`
+The point is that toolkit UI should listen to reusable interfaces/data instead of knowing about one specific player or enemy script.
 
-**Extend it:** add UI components that consume reusable interfaces/data. Keep scene flow, project-specific menus, and art-direction-specific screen logic in the consuming game.
+So if I add more shared UI later, I keep the game-specific menus/screens in the game and only put actually reusable pieces here.
 
 ---
 
-### Toolkit Debugger — `com.missnibiru.debugger`
+### Toolkit Debugger
+`com.missnibiru.debugger`
 
-Read-only Unity Editor diagnostics for recurring project validation and debugging work.
+This one exists because I got tired of manually hunting for the same Unity problems over and over again.
 
-Open from:
+Open it here:
 
 **Tools > Miss Nibiru > Toolkit Debugger**
 
-It provides:
+It can do Quick, Selection, and Full Project scans for things like:
 
-- Quick Scan
-- Selection Scan
-- Full Project Scan
-- package and package-version checks
-- assembly-definition checks
-- missing/broken serialized reference checks
-- stable-ID checks
-- toolkit-specific configuration checks
-- current editor-session live logs
-- actionable issue descriptions and locations
+- package problems
+- assembly definition problems
+- missing scripts / broken references
+- duplicate or empty IDs
+- bad toolkit configuration
+- current Unity warnings/errors
 
-Key types:
+It is read-only. It tells me what looks wrong and where it is, but it does not secretly start changing my project.
 
-- `ToolkitDebuggerWindow`
-- `ToolkitProjectScanner`
-- `ToolkitDebugIssue`
-- `ToolkitDebugReport`
-- `ToolkitLogCapture`
+If I want it to check something new later, I add another scanner rule that creates a `ToolkitDebugIssue` with a useful message + location + suggested fix.
 
-**Extend it:** add deterministic, read-only scanner rules that emit `ToolkitDebugIssue` results with a useful severity, category, message, location, and suggested action.
+Debugger spec:
 
-See the package README and debugger specification for adoption details.
+[`Packages/com.missnibiru.debugger/Documentation~/ToolkitDebuggerSpecification.md`](Packages/com.missnibiru.debugger/Documentation~/ToolkitDebuggerSpecification.md)
 
-## Demo content
+---
 
-`Assets/_Project/00_NibiruToolKit` contains examples for several reusable systems, including health, state machines, patterns, combat configurations, information, and waves.
+## So... how do I extend this thing?
 
-`Assets/_Project/02_Scenes/ToolkitDEMO_Scene.unity` is the integration scene used to exercise toolkit systems together while keeping the reusable packages independent of demo content.
+My general rule is:
 
-## How to add a new reusable system
+**If it is data, make a new asset.**
 
-Before adding a new package or feature to an existing package, check four things:
+New attack? New configuration.
 
-1. **Is the problem reusable across projects?** If it only exists because of one game's progression, scene flow, or content, leave it in the game.
-2. **Which package owns the domain?** Avoid placing unrelated behaviour into Core just because Core is shared.
-3. **What is the extension boundary?** Prefer a small interface, generic contract, ScriptableObject data model, event, or provider over direct references to concrete game managers.
-4. **Can it be tested without the original game?** Reusable runtime logic should be testable independently where practical.
+New pattern? New pattern asset.
 
-## Architecture rules
+New spawnable? New definition.
 
-- Runtime packages do not reference scripts under `Assets`.
-- Editor tooling stays in Editor assemblies/folders.
-- Combat reuses Core damage contracts.
-- Enemies reuse Core and Combat instead of duplicating health/projectile systems.
-- UI binds to reusable contracts rather than player/enemy concrete classes.
-- Information persistence is provided through a storage contract.
-- Waves owns spawning/encounter scheduling, not room progression or enemy AI.
-- New systems should extend contracts before modifying all callers.
+**If the behaviour genuinely works differently, implement the interface.**
+
+New movement style? `IEnemyMovementBehaviour`.
+
+New projectile spawning method? `IProjectileEmitter`.
+
+New save backend for collected information? `IInformationCollectionStore`.
+
+New wave spawning backend? `IWaveSpawner`.
+
+That is basically the whole architecture idea: extend the small part that changes instead of copying and rewriting an entire system.
+
+## Demo stuff
+
+The project also has examples under:
+
+`Assets/_Project/00_NibiruToolKit`
+
+There are examples for health, state machines, patterns, projectile attacks, information and waves.
+
+The main integration scene is:
+
+`Assets/_Project/02_Scenes/ToolkitDEMO_Scene.unity`
+
+## If you want the VERY detailed version
+
+The README is intentionally the chill version.
+
+The full architecture, package relationships, testing rules and the "what changed from the original project and why" stuff lives here:
+
+[`Documentation~/FinalArchitectureSpecification.md`](Documentation~/FinalArchitectureSpecification.md)
+
+Development Build / stress scenario notes are here:
+
+[`Documentation~/DevelopmentBuildStressScenario.md`](Documentation~/DevelopmentBuildStressScenario.md)
 
 ## Unity version
 
-The embedded packages target Unity 6 (`6000.0` package compatibility baseline).
+Built for Unity 6 (`6000.0+`).
 
 ## Tests
 
-EditMode tests are included inside the package folders for the major reusable domains. Run the Unity Test Framework after changing package runtime/editor behaviour.
+The main packages have EditMode tests inside their package folders.
 
-Integration behaviour can also be checked through `ToolkitDEMO_Scene`.
+For a quick real-project sanity check, I also use `ToolkitDEMO_Scene` to make sure the different systems still play nicely together.
