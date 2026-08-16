@@ -19,6 +19,11 @@ namespace MissNibiru.Waves.Tracking
             Released?.Invoke(this);
         }
 
+        private void OnEnable()
+        {
+            IsReleased = false;
+        }
+
         private void OnDisable()
         {
             Release();

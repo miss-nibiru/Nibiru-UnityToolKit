@@ -10,15 +10,15 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 781c3d3df7c314d2782e353ef997e760, type: 3}
-  m_Name: INFO_HealingPotion
+  m_Name: ITEM_HealingPotion
   m_EditorClassIdentifier: MissNibiru.Information::MissNibiru.Information.Data.InformationEntry
   id: healing_potion
   displayName: Healing Potion
-  informationType: {fileID: 0}
+  informationType: {fileID: 11400000, guid: 1ea65674c60834001ad471785cab7a58, type: 2}
   category: {fileID: 11400000, guid: 9aade18f191104297aa175833f7ee89b, type: 2}
-  summary: Add a summary here
-  icon: {fileID: 0}
-  image: {fileID: 0}
+  summary: This potion heals the player uwuwu
+  icon: {fileID: 10913, guid: 0000000000000000f000000000000000, type: 0}
+  image: {fileID: 10913, guid: 0000000000000000f000000000000000, type: 0}
   pages:
   - heading: Page 1
     body: Example page AA

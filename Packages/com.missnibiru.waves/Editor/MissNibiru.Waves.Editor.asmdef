@@ -1,0 +1,18 @@
+{
+    "name": "MissNibiru.Waves.Editor",
+    "rootNamespace": "MissNibiru.Waves.Editor",
+    "references": [
+        "MissNibiru.Waves"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

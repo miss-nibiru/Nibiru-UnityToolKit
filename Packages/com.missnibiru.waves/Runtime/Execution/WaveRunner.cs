@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using MissNibiru.Waves.Data;
+using MissNibiru.Waves.Layouts;
+using MissNibiru.Waves.Planning;
 using MissNibiru.Waves.Spawning;
 using MissNibiru.Waves.Tracking;
 using UnityEngine;
@@ -48,12 +50,20 @@ namespace MissNibiru.Waves.Execution
         [SerializeField]
         private bool loopSequence;
 
+        [Header("Authored Layout")]
+
+        [SerializeField, Tooltip("Optional authored sequence.")]
+        private WaveLayoutData authoredLayout;
+
+        [SerializeField, Tooltip("Grid world anchor.")]
+        private Transform authoredLayoutOrigin;
+
         [Header("Dependencies")]
 
         [SerializeField]
         private MonoBehaviour spawnPointProviderSource;
 
-        [SerializeField]
+        [SerializeField, Tooltip("Implements IWaveSpawner.")]
         private MonoBehaviour spawnerSource;
 
         [SerializeField]
@@ -62,12 +72,23 @@ namespace MissNibiru.Waves.Execution
         private readonly List<GroupRuntime> _groups =
             new List<GroupRuntime>();
 
+        private readonly List<WaveSpawnInstruction>
+            _layoutInstructions =
+                new List<WaveSpawnInstruction>();
+
+        private readonly HashSet<WaveSpawnedObject>
+            _layoutActiveObjects =
+                new HashSet<WaveSpawnedObject>();
+
         private ISpawnPointProvider _spawnPointProvider;
         private IWaveSpawner _spawner;
 
         private WaveData _currentWave;
+        private WaveLayoutWave _currentLayoutWave;
         private int _currentWaveIndex = -1;
         private int _nextGroupIndex;
+        private int _nextLayoutInstructionIndex;
+        private bool _usingAuthoredLayout;
 
         private float _initialDelayRemaining;
         private float _waveElapsed;
@@ -75,6 +96,10 @@ namespace MissNibiru.Waves.Execution
 
         public event Action<int, WaveData> WaveStarted;
         public event Action<int, WaveData> WaveCompleted;
+        public event Action<int, WaveLayoutWave>
+            LayoutWaveStarted;
+        public event Action<int, WaveLayoutWave>
+            LayoutWaveCompleted;
         public event Action SequenceCompleted;
         public event Action<GameObject> ObjectSpawned;
 
@@ -83,6 +108,14 @@ namespace MissNibiru.Waves.Execution
 
         public int CurrentWaveIndex => _currentWaveIndex;
         public WaveData CurrentWave => _currentWave;
+        public WaveLayoutWave CurrentLayoutWave =>
+            _currentLayoutWave;
+        public WaveLayoutData AuthoredLayout => authoredLayout;
+        public Transform AuthoredLayoutOrigin =>
+            authoredLayoutOrigin;
+        public MonoBehaviour SpawnerSource => spawnerSource;
+        public bool UsesAuthoredLayout =>
+            authoredLayout != null;
 
         public bool IsRunning =>
             State == WaveRunnerState.InitialDelay ||
@@ -97,6 +130,8 @@ namespace MissNibiru.Waves.Execution
 
                 foreach (GroupRuntime group in _groups)
                     total += group.ActiveObjects.Count;
+
+                total += _layoutActiveObjects.Count;
 
                 return total;
             }
@@ -131,7 +166,18 @@ namespace MissNibiru.Waves.Execution
             IWaveSpawner spawner)
         {
             waves = waveSequence;
+            authoredLayout = null;
             _spawnPointProvider = spawnPointProvider;
+            _spawner = spawner;
+        }
+
+        public void ConfigureLayout(
+            WaveLayoutData layout,
+            Transform worldOrigin,
+            IWaveSpawner spawner)
+        {
+            authoredLayout = layout;
+            authoredLayoutOrigin = worldOrigin;
             _spawner = spawner;
         }
 
@@ -143,7 +189,10 @@ namespace MissNibiru.Waves.Execution
 
         public bool StartWave(int waveIndex)
         {
-            if (!ResolveDependencies())
+            if (authoredLayout != null)
+                return StartAuthoredWave(waveIndex);
+
+            if (!ResolveDependencies(true))
             {
                 Debug.LogError(
                     "WaveRunner requires an ISpawnPointProvider " +
@@ -173,6 +222,46 @@ namespace MissNibiru.Waves.Execution
             return true;
         }
 
+        private bool StartAuthoredWave(int waveIndex)
+        {
+            if (!ResolveDependencies(false))
+            {
+                Debug.LogError(
+                    "WaveRunner requires an IWaveSpawner.",
+                    this);
+
+                return false;
+            }
+
+            if (authoredLayoutOrigin == null)
+            {
+                Debug.LogError(
+                    "WaveRunner requires a layout origin.",
+                    this);
+
+                return false;
+            }
+
+            if (authoredLayout.Waves == null ||
+                waveIndex < 0 ||
+                waveIndex >= authoredLayout.Waves.Count ||
+                authoredLayout.Waves[waveIndex] == null)
+            {
+                Debug.LogError(
+                    "WaveRunner cannot start because the authored " +
+                    "wave index is invalid.",
+                    this);
+
+                return false;
+            }
+
+            if (IsRunning || ActiveObjectCount > 0)
+                Stop(true);
+
+            BeginAuthoredWave(waveIndex);
+            return true;
+        }
+
         public void Tick(float deltaTime)
         {
             if (!IsRunning)
@@ -194,11 +283,16 @@ namespace MissNibiru.Waves.Execution
             }
 
             if (State == WaveRunnerState.Spawning)
-                TickSpawning(remainingTime);
+            {
+                if (_usingAuthoredLayout)
+                    TickAuthoredSpawning(remainingTime);
+                else
+                    TickSpawning(remainingTime);
+            }
 
             if (State ==
                     WaveRunnerState.WaitingForCompletion &&
-                (!_currentWave.WaitForActiveObjectsToClear ||
+                (!WaitsForActiveObjectsToClear() ||
                  ActiveObjectCount == 0))
             {
                 CompleteCurrentWave();
@@ -219,13 +313,17 @@ namespace MissNibiru.Waves.Execution
                 DetachTrackedObjects();
 
             _currentWave = null;
+            _currentLayoutWave = null;
             _currentWaveIndex = -1;
             _groups.Clear();
+            _layoutInstructions.Clear();
+            _usingAuthoredLayout = false;
 
             State = WaveRunnerState.Stopped;
         }
 
-        private bool ResolveDependencies()
+        private bool ResolveDependencies(
+            bool requiresSpawnPointProvider = false)
         {
             if (_spawnPointProvider == null)
             {
@@ -237,14 +335,17 @@ namespace MissNibiru.Waves.Execution
             if (_spawner == null)
                 _spawner = spawnerSource as IWaveSpawner;
 
-            return _spawnPointProvider != null &&
-                   _spawner != null;
+            return _spawner != null &&
+                   (!requiresSpawnPointProvider ||
+                    _spawnPointProvider != null);
         }
 
         private void BeginWave(int waveIndex)
         {
+            _usingAuthoredLayout = false;
             _currentWaveIndex = waveIndex;
             _currentWave = waves[waveIndex];
+            _currentLayoutWave = null;
 
             _groups.Clear();
             _nextGroupIndex = 0;
@@ -277,6 +378,35 @@ namespace MissNibiru.Waves.Execution
                 _currentWave);
         }
 
+        private void BeginAuthoredWave(int waveIndex)
+        {
+            _usingAuthoredLayout = true;
+            _currentWaveIndex = waveIndex;
+            _currentWave = null;
+            _currentLayoutWave = authoredLayout.Waves[waveIndex];
+
+            _groups.Clear();
+            _layoutInstructions.Clear();
+            _layoutInstructions.AddRange(
+                WaveLayoutCompiler.CompileWave(
+                    authoredLayout,
+                    waveIndex));
+
+            _nextLayoutInstructionIndex = 0;
+            _waveElapsed = 0f;
+            _initialDelayRemaining = Mathf.Max(
+                0f,
+                _currentLayoutWave.InitialDelay);
+
+            State = _initialDelayRemaining > 0f
+                ? WaveRunnerState.InitialDelay
+                : WaveRunnerState.Spawning;
+
+            LayoutWaveStarted?.Invoke(
+                _currentWaveIndex,
+                _currentLayoutWave);
+        }
+
         private void TickSpawning(float deltaTime)
         {
             _waveElapsed += deltaTime;
@@ -298,6 +428,99 @@ namespace MissNibiru.Waves.Execution
                 State =
                     WaveRunnerState.WaitingForCompletion;
             }
+        }
+
+        private void TickAuthoredSpawning(float deltaTime)
+        {
+            _waveElapsed += deltaTime;
+
+            bool durationFinished =
+                _currentLayoutWave.UsesDuration &&
+                _waveElapsed >= _currentLayoutWave.Duration;
+
+            float availableTime =
+                _currentLayoutWave.UsesDuration
+                    ? Mathf.Min(
+                        _waveElapsed,
+                        Mathf.Max(0f, _currentLayoutWave.Duration))
+                    : _waveElapsed;
+
+            while (_nextLayoutInstructionIndex <
+                   _layoutInstructions.Count)
+            {
+                WaveSpawnInstruction instruction =
+                    _layoutInstructions[
+                        _nextLayoutInstructionIndex];
+
+                if (instruction.SpawnTime >
+                    availableTime + Mathf.Epsilon)
+                {
+                    break;
+                }
+
+                SpawnLayoutInstruction(instruction);
+                _nextLayoutInstructionIndex++;
+            }
+
+            if (durationFinished)
+            {
+                _nextLayoutInstructionIndex =
+                    _layoutInstructions.Count;
+            }
+
+            bool schedulingFinished =
+                _currentLayoutWave.UsesDuration
+                    ? durationFinished
+                    : _nextLayoutInstructionIndex >=
+                      _layoutInstructions.Count;
+
+            if (schedulingFinished)
+            {
+                State = WaveRunnerState.WaitingForCompletion;
+            }
+        }
+
+        private void SpawnLayoutInstruction(
+            WaveSpawnInstruction instruction)
+        {
+            if (instruction?.Spawnable == null ||
+                instruction.Spawnable.Prefab == null)
+            {
+                return;
+            }
+
+            Pose pose = new Pose(
+                WaveLayoutGeometry.CellToWorld(
+                    authoredLayout,
+                    authoredLayoutOrigin,
+                    instruction.Cell),
+                WaveLayoutGeometry.GetWorldRotation(
+                    authoredLayout,
+                    authoredLayoutOrigin,
+                    instruction.Rotation));
+
+            GameObject instance = _spawner.Spawn(
+                instruction.Spawnable.Prefab,
+                pose,
+                spawnedObjectParent);
+
+            if (instance == null)
+                return;
+
+            WaveSpawnedObject trackedObject =
+                instance.GetComponent<WaveSpawnedObject>();
+
+            if (trackedObject == null)
+            {
+                trackedObject =
+                    instance.AddComponent<WaveSpawnedObject>();
+            }
+
+            trackedObject.Released +=
+                HandleTrackedObjectReleased;
+
+            _layoutActiveObjects.Add(trackedObject);
+            ObjectSpawned?.Invoke(instance);
         }
 
         private bool TrySpawnNextGroup()
@@ -550,6 +773,21 @@ namespace MissNibiru.Waves.Execution
 
             foreach (GroupRuntime group in _groups)
                 group.ActiveObjects.Remove(trackedObject);
+
+            _layoutActiveObjects.Remove(trackedObject);
+        }
+
+        private bool WaitsForActiveObjectsToClear()
+        {
+            if (_usingAuthoredLayout)
+            {
+                return _currentLayoutWave != null &&
+                       _currentLayoutWave
+                           .WaitForActiveObjectsToClear;
+            }
+
+            return _currentWave != null &&
+                   _currentWave.WaitForActiveObjectsToClear;
         }
 
         private bool AreAllGroupsExhausted()
@@ -576,6 +814,12 @@ namespace MissNibiru.Waves.Execution
 
         private void CompleteCurrentWave()
         {
+            if (_usingAuthoredLayout)
+            {
+                CompleteAuthoredWave();
+                return;
+            }
+
             int completedIndex = _currentWaveIndex;
             WaveData completedWave = _currentWave;
 
@@ -614,6 +858,53 @@ namespace MissNibiru.Waves.Execution
             SequenceCompleted?.Invoke();
         }
 
+        private void CompleteAuthoredWave()
+        {
+            int completedIndex = _currentWaveIndex;
+            WaveLayoutWave completedWave =
+                _currentLayoutWave;
+
+            if (completedWave
+                .DespawnActiveObjectsOnCompletion)
+            {
+                DespawnTrackedObjects();
+            }
+            else
+            {
+                DetachTrackedObjects();
+            }
+
+            LayoutWaveCompleted?.Invoke(
+                completedIndex,
+                completedWave);
+
+            int nextIndex = completedIndex + 1;
+            bool hasNext =
+                authoredLayout != null &&
+                nextIndex < authoredLayout.Waves.Count;
+
+            if (completedWave.AutoProgress && hasNext)
+            {
+                BeginAuthoredWave(nextIndex);
+                return;
+            }
+
+            if (!hasNext &&
+                loopSequence &&
+                authoredLayout != null &&
+                authoredLayout.Waves.Count > 0)
+            {
+                BeginAuthoredWave(0);
+                return;
+            }
+
+            _currentLayoutWave = null;
+            State = WaveRunnerState.Completed;
+
+            if (!hasNext)
+                SequenceCompleted?.Invoke();
+        }
+
         private void DetachTrackedObjects()
         {
             foreach (GroupRuntime group in _groups)
@@ -631,6 +922,19 @@ namespace MissNibiru.Waves.Execution
 
                 group.ActiveObjects.Clear();
             }
+
+            foreach (
+                WaveSpawnedObject trackedObject
+                in _layoutActiveObjects)
+            {
+                if (trackedObject != null)
+                {
+                    trackedObject.Released -=
+                        HandleTrackedObjectReleased;
+                }
+            }
+
+            _layoutActiveObjects.Clear();
         }
 
         private void DespawnTrackedObjects()
@@ -645,6 +949,11 @@ namespace MissNibiru.Waves.Execution
 
                 group.ActiveObjects.Clear();
             }
+
+            objectsToDespawn.AddRange(
+                _layoutActiveObjects);
+
+            _layoutActiveObjects.Clear();
 
             foreach (
                 WaveSpawnedObject trackedObject

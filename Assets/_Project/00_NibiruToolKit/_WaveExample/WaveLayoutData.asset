@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 22094fb337124b5ab91773506702208f, type: 3}
+  m_Name: WaveLayoutData
+  m_EditorClassIdentifier: MissNibiru.Waves::MissNibiru.Waves.Layouts.WaveLayoutData
+  catalog: {fileID: 11400000, guid: d195a18a1bdd84fafa40b409edde514a, type: 2}
+  columns: 20
+  rows: 20
+  gridPlane: 0
+  cellSize: 1
+  activeEnemyBudget: 20
+  waves:
+  - waveName: EnemyWave_Demo1
+    initialDelay: 0
+    usesDuration: 1
+    duration: 60
+    waitForActiveObjectsToClear: 1
+    autoProgress: 1
+    despawnActiveObjectsOnCompletion: 0
+    placements: []

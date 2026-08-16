@@ -762,6 +762,8 @@ MonoBehaviour:
   - {fileID: 11400000, guid: a6a96e7ef115e4b94913b110b46866e0, type: 2}
   playOnStart: 1
   loopSequence: 0
+  authoredLayout: {fileID: 11400000, guid: 22569f6d345494a25b358cf255ddb0bb, type: 2}
+  authoredLayoutOrigin: {fileID: 0}
   spawnPointProviderSource: {fileID: 680718440}
   spawnerSource: {fileID: 680718439}
   spawnedObjectParent: {fileID: 680718441}

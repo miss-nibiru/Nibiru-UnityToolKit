@@ -2,7 +2,8 @@
 	"name": "MissNibiru.Waves.Tests",
 	"rootNamespace": "MissNibiru.Waves.Tests",
 	"references": [
-		"MissNibiru.Waves"
+		"MissNibiru.Waves",
+		"MissNibiru.Waves.Editor"
 	],
 	"includePlatforms": [
 		"Editor"

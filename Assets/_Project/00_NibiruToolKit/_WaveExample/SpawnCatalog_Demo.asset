@@ -9,9 +9,8 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b14b1d7e4655244928896d37e83a2781, type: 3}
-  m_Name: TYPE_Item
-  m_EditorClassIdentifier: MissNibiru.Information::MissNibiru.Information.Data.InformationType
-  id: item
-  displayName: Item Demo
-  icon: {fileID: 0}
+  m_Script: {fileID: 11500000, guid: 8977e57be6ad4412a75161a64f7c1ed3, type: 3}
+  m_Name: SpawnCatalog_Demo
+  m_EditorClassIdentifier: MissNibiru.Waves::MissNibiru.Waves.Layouts.SpawnCatalog
+  spawnables: []
+  formations: []
