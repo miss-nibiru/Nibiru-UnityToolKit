@@ -10,6 +10,7 @@ The toolkit is divided into independently versioned packages with explicit respo
 - `com.missnibiru.combat`
 - `com.missnibiru.enemies`
 - `com.missnibiru.information`
+- `com.missnibiru.narrative`
 - `com.missnibiru.waves`
 - `com.missnibiru.ui`
 - `com.missnibiru.debugger`
@@ -21,13 +22,13 @@ The repository also contains demo assets and scenes under `Assets/_Project/00_Ni
 The final architecture follows these goals:
 
 1. **Reusable before project-specific.** Core behaviour is expressed through small runtime APIs, interfaces, ScriptableObjects, and components rather than direct references to one game's managers or scenes.
-2. **Composable systems.** Movement, attacks, targeting, spawning, information storage, patterns, and state transitions can be replaced independently.
+2. **Composable systems.** Movement, attacks, targeting, spawning, information storage, narrative state, patterns, and state transitions can be replaced or extended independently.
 3. **Data separate from execution.** ScriptableObjects hold reusable configuration while runtime services and components perform execution.
 4. **Explicit package ownership.** Each package owns one domain and avoids absorbing unrelated game logic.
 5. **Editor tooling remains editor-only.** Authoring and diagnostic windows are separated from runtime assemblies.
-6. **Extension through contracts.** Interfaces and generic APIs provide intended extension seams instead of requiring edits to existing package code.
+6. **Extension through contracts and events.** Interfaces, generic APIs, ScriptableObject definitions, and events provide intended extension seams instead of requiring edits to existing package code.
 7. **Backward-compatible authoring where practical.** New authoring workflows are added without requiring a second competing runtime system.
-8. **Testable units.** Core behaviour is covered by EditMode tests at package level.
+8. **Testable units.** Reusable behaviour is covered by package-level tests where practical.
 
 ## 3. Package dependency map
 
@@ -40,6 +41,7 @@ Core
 └── UI
 
 Information   (standalone runtime domain)
+Narrative     (standalone runtime domain; Unity UI dependency for default presentation)
 Waves         (standalone runtime domain)
 Debugger      (editor-only diagnostics across the project)
 ```
@@ -51,6 +53,7 @@ Detailed dependency rules:
 - **Enemies** depends on Core and Combat.
 - **UI** depends on Core and Unity UI.
 - **Information** is designed as an independent runtime domain.
+- **Narrative** is designed as an independent runtime domain and uses Unity UI for its default presenter; it does not depend on project-specific quest, inventory, AI, or scene systems.
 - **Waves** is designed as an independent runtime spawning/encounter domain.
 - **Debugger** is editor-only and inspects packages, assemblies, assets, scenes, and toolkit configuration without becoming a runtime dependency.
 
@@ -326,11 +329,84 @@ The Information Organizer editor code supports creation, editing, validation, an
 
 ---
 
-# 8. Waves package
+# 8. Narrative package
+
+Package: `com.missnibiru.narrative`
+
+## 8.1 Responsibility
+
+Narrative owns reusable dialogue and visual-novel authoring/runtime behaviour. It is designed to support direct conversations, branching routes, choices, conditions, variables, flags, events, save/resume state, presentation data, and Twine/Twee import without depending on one game's quest, inventory, AI, or scene architecture.
+
+The package separates:
+
+- authored story/node data
+- reusable definitions such as characters, emotions, variables, flags, events, audio, and presentation profiles
+- runtime story execution/state
+- default runtime presentation
+- editor graph authoring, preview, validation, and import tools
+
+## 8.2 Story data and definitions
+
+Representative reusable types include:
+
+- `NarrativeStory`
+- `NarrativeCharacter`
+- `NarrativeEmotion`
+- `NarrativeEvent`
+- `NarrativeFlag`
+- narrative variable definitions
+- `DialoguePresentationProfile`
+- `NarrativeAudioProfile`
+
+Story content and reusable definitions are ScriptableObject-first so authored content can be reused and edited without embedding dialogue structure directly in MonoBehaviours.
+
+### Extension point
+
+Add new story assets, characters, emotions, variables, flags, events, presentation profiles, and supported node content through the package's authored data model. Gameplay systems should react to narrative events/state instead of being hardcoded into narrative assets.
+
+## 8.3 Runtime execution and presentation
+
+Main integration components include:
+
+- `NarrativeRunner`
+- `NarrativePresenter`
+- `NarrativeEventListener`
+
+`NarrativeRunner` owns story execution and runtime state. `NarrativePresenter` provides a default uGUI presentation path driven by the story's presentation data. `NarrativeEventListener` provides an Inspector-friendly bridge from reusable narrative events to project-owned UnityEvents.
+
+The runtime can create/resume save data through its public save APIs. The package can support simple PlayerPrefs-based prototype persistence while allowing a consuming game to place returned save data inside its own full save-file system.
+
+### Extension point
+
+Projects may use the default presenter or connect story execution to their own presentation layer. Project-specific quest changes, inventory rewards, room locks, combat triggers, or other consequences should subscribe/react to `NarrativeEvent` assets or runner events rather than creating direct package dependencies on those systems.
+
+## 8.4 Variables and gameplay-facing state
+
+Narrative variables are generic state, not dialogue-only values. They can represent route decisions, relationship points, reputation, alchemy values, counters, or other authored state required by branching narrative.
+
+### Extension point
+
+A consuming game may read or modify values through the narrative blackboard/runtime APIs and observe variable changes. The Narrative package owns the state model and branching evaluation; the rest of the game decides what those values mean outside the story.
+
+## 8.5 Visual Novel Builder and Twee import
+
+The main authoring tool is opened from:
+
+`Tools > Miss Nibiru > Visual Novel Builder`
+
+The builder provides node-graph story authoring, reusable library assets, presentation setup, preview, validation, and Twee import. SugarCube `.twee` import converts supported Twine passages, links, and state logic into Unity narrative data while producing a report for content that requires manual review.
+
+The import boundary is intentional: browser HTML layout and web-specific asset paths are not treated as Unity runtime UI/assets and must be connected through Unity presentation/audio data where appropriate.
+
+See `Packages/com.missnibiru.narrative/README.md` and the package documentation for setup and architecture details.
+
+---
+
+# 9. Waves package
 
 Package: `com.missnibiru.waves`
 
-## 8.1 Responsibility
+## 9.1 Responsibility
 
 Waves owns reusable timed spawning and grid-authored encounter layouts. It does not own enemy AI, room doors, cameras, combat rules, or project progression.
 
@@ -341,7 +417,7 @@ It supports both:
 
 Both authoring approaches use the same runtime `WaveRunner`; the package does not introduce parallel competing runtimes.
 
-## 8.2 Runtime wave data
+## 9.2 Runtime wave data
 
 Main types:
 
@@ -355,7 +431,7 @@ Main types:
 
 Project flow calls `WaveRunner.StartSequence()` when an encounter should begin and subscribes to/uses runner state as needed. Room-state logic remains external.
 
-## 8.3 Spawning contracts
+## 9.3 Spawning contracts
 
 Main types:
 
@@ -371,7 +447,7 @@ The runtime separates **what should spawn** from **where/how spawn points are pr
 
 Implement `ISpawnPointProvider` for another positioning source or `IWaveSpawner` for another spawning backend.
 
-## 8.4 Authored layouts
+## 9.4 Authored layouts
 
 Main types:
 
@@ -390,7 +466,7 @@ The editor stores encounter intent as data. Planning/compiler classes convert th
 
 Add new `SpawnableDefinition` assets for enemies, hazards, pickups, or other prefabs. Add reusable formations through `SpawnFormationDefinition`. The catalog and layout model should remain content-agnostic.
 
-## 8.5 Editor tools
+## 9.5 Editor tools
 
 Main editor classes:
 
@@ -406,11 +482,11 @@ See `Packages/com.missnibiru.waves/Documentation~/WaveLayoutBuilderSpecification
 
 ---
 
-# 9. UI package
+# 10. UI package
 
 Package: `com.missnibiru.ui`
 
-## 9.1 Responsibility
+## 10.1 Responsibility
 
 UI contains reusable presentation components that depend on toolkit runtime contracts rather than concrete game actors.
 
@@ -426,11 +502,11 @@ Additional toolkit UI should follow the same rule: bind to reusable interfaces/d
 
 ---
 
-# 10. Debugger package
+# 11. Debugger package
 
 Package: `com.missnibiru.debugger`
 
-## 10.1 Responsibility
+## 11.1 Responsibility
 
 Toolkit Debugger is a read-only Unity Editor diagnostic tool. It automates repeated inspection of package, assembly, asset, scene, and toolkit configuration problems.
 
@@ -446,13 +522,13 @@ The window is opened from:
 
 `Tools > Miss Nibiru > Toolkit Debugger`
 
-## 10.2 Scan modes
+## 11.2 Scan modes
 
 - **Quick Scan** — package, assembly, open-scene, and toolkit ScriptableObject checks.
 - **Selection Scan** — checks selected folders, assets, and scene objects.
 - **Full Project** — checks the wider project asset set.
 
-## 10.3 Output
+## 11.3 Output
 
 Findings are represented as typed issues with:
 
@@ -465,7 +541,7 @@ Findings are represented as typed issues with:
 
 The tool also captures live Unity log output for the current editor session.
 
-## 10.4 Safety boundary
+## 11.4 Safety boundary
 
 The debugger is diagnostic and read-only. Scans should not silently mutate project content. Fixes remain intentional developer actions.
 
@@ -477,75 +553,81 @@ See `Packages/com.missnibiru.debugger/Documentation~/ToolkitDebuggerSpecificatio
 
 ---
 
-# 11. Cross-package integration rules
+# 12. Cross-package integration rules
 
 1. **Depend downward, not sideways without reason.** New package dependencies must be justified by domain ownership.
-2. **Prefer interfaces at boundaries.** Systems should consume `IDamageable`, `IProjectileEmitter`, `IEnemyMovementBehaviour`, `IEnemyAttackBehaviour`, `IEnemyTargetProvider`, `IInformationCollectionStore`, `ISpawnPointProvider`, or `IWaveSpawner` where replacement is expected.
-3. **Do not put game managers in toolkit packages.** Scene transitions, quests, room locking, win conditions, player input maps, and narrative progression belong to the consuming project.
-4. **Do not duplicate shared behaviour.** Enemy projectile attacks should reuse Combat. UI health display should reuse Core health state. New authored encounter tools should compile into the existing Waves runtime.
-5. **Keep editor code out of runtime assemblies.** Editor windows, validators, and authoring helpers live in Editor assemblies/folders.
-6. **Use ScriptableObjects for reusable authored data.** Behaviour that designers should configure repeatedly belongs in assets rather than copied MonoBehaviour values when practical.
-7. **Preserve stable extension seams.** Prefer adding an implementation of an existing contract over editing every caller.
+2. **Prefer interfaces/events at boundaries.** Systems should consume reusable contracts such as `IDamageable`, `IProjectileEmitter`, `IEnemyMovementBehaviour`, `IEnemyAttackBehaviour`, `IEnemyTargetProvider`, `IInformationCollectionStore`, `ISpawnPointProvider`, `IWaveSpawner`, or narrative events/runtime APIs where replacement or project integration is expected.
+3. **Do not put game managers in toolkit packages.** Scene transitions, quests, room locking, win conditions, player input maps, and project-specific progression belong to the consuming project.
+4. **Do not duplicate shared behaviour.** Enemy projectile attacks should reuse Combat. UI health display should reuse Core health state. New authored encounter tools should compile into the existing Waves runtime. Gameplay consequences of dialogue should react to Narrative rather than forcing quest/inventory systems into the Narrative package.
+5. **Keep editor code out of runtime assemblies.** Editor windows, validators, graph authoring tools, importers, and other editor helpers live in Editor assemblies/folders.
+6. **Use ScriptableObjects for reusable authored data.** Behaviour/content that designers should configure repeatedly belongs in assets rather than copied MonoBehaviour values when practical.
+7. **Preserve stable extension seams.** Prefer adding an implementation, definition, node/data type, or event consumer over editing every caller.
 
 ---
 
-# 12. Testing strategy
+# 13. Testing strategy
 
-The repository contains EditMode tests for the major reusable domains, including Core, Combat, Enemies, Information, Waves, and Debugger behaviour.
+The repository contains package-level tests for the major reusable domains, including Core, Combat, Enemies, Information, Narrative, Waves, and Debugger behaviour.
 
 Tests are intended to protect reusable contracts during refactoring. New fixes to package behaviour should add or update tests at the package level where the behaviour can be isolated.
 
-Demo scene verification remains useful for integration, but it does not replace package-level tests.
+Demo scene verification and editor-tool validation remain useful for integration, but they do not replace package-level tests.
 
 ---
 
-# 13. Divergence summary
+# 14. Divergence summary
 
 The final architecture differs from the earlier project-specific implementation in several deliberate ways.
 
-## 13.1 Monolithic/project scripts → independent packages
+## 14.1 Monolithic/project scripts → independent packages
 
 **Revision:** Reusable systems were moved into separate Unity packages with their own runtime/editor assemblies and tests.
 
 **Reasoning:** Copying project folders does not create a reusable architecture. Package boundaries make ownership, dependencies, and portability explicit.
 
-## 13.2 Concrete game-state flow → generic state machine
+## 14.2 Concrete game-state flow → generic state machine
 
 **Revision:** State handling became `StateMachine<TContext>` with `IState<TContext>`.
 
 **Reasoning:** A state machine should not know the original game's battle manager or state names. A generic context allows the same transition mechanism to support combat, menus, AI, dialogue, encounters, or other domains.
 
-## 13.3 Hardcoded attack implementations → shared projectile configuration/executor
+## 14.3 Hardcoded attack implementations → shared projectile configuration/executor
 
 **Revision:** Projectile attacks were consolidated around reusable configuration, shared execution, spawn requests, and an emitter contract.
 
 **Reasoning:** One-shot, rapid, burst, fan, and similar attacks mostly differ in data. Centralizing execution removes duplicated timing/spread/projectile logic and gives future projects one extension point.
 
-## 13.4 Enemy-specific logic → composable enemy behaviours
+## 14.4 Enemy-specific logic → composable enemy behaviours
 
 **Revision:** Enemy movement, attacks, and targeting were split into contracts and implementations.
 
 **Reasoning:** Enemy reuse requires mixing behaviour rather than duplicating entire enemy controllers. This also made 2D/3D or different movement-plane use cases easier to support without separate enemy frameworks.
 
-## 13.5 Evidence-specific collection → generic information system
+## 14.5 Evidence-specific collection → generic information system
 
 **Revision:** The collection model was generalized into information entries, pages, categories, types, databases, and a pluggable collection store.
 
 **Reasoning:** The underlying problem is broader than evidence. The same model can support clues, codices, lore, discoveries, tutorials, or knowledge tracking in future projects.
 
-## 13.6 Direct persistence assumption → storage abstraction
+## 14.6 Direct persistence assumption → storage abstraction
 
 **Revision:** Collected information is accessed through `IInformationCollectionStore` with an in-memory default implementation.
 
 **Reasoning:** Persistence strategy is project-specific. The package should own collection semantics, not force a save technology.
 
-## 13.7 Basic wave spawning → shared runtime plus authored layout system
+## 14.7 Project-specific dialogue flow → reusable Narrative package and visual authoring
+
+**Revision:** Dialogue/visual-novel content was separated into ScriptableObject story data, a reusable runtime runner/presenter, generic variables/flags/events, visual node-based authoring, validation/preview, save/resume APIs, and Twee import.
+
+**Reasoning:** Dialogue logic becomes difficult to reuse when it directly references one game's quests, inventory, UI, or scene flow. The package now owns narrative state and presentation contracts while gameplay consequences stay in the consuming project through events and public runtime APIs. The visual authoring workflow also allows story content to be edited without reading or rewriting runtime source.
+
+## 14.8 Basic wave spawning → shared runtime plus authored layout system
 
 **Revision:** Waves now support reusable runtime sequences and exact grid-authored layouts/formations through one `WaveRunner`.
 
 **Reasoning:** Encounter authoring needed better designer tooling without creating a second runtime implementation. Authored layouts compile into the existing runtime path.
 
-## 13.8 Manual recurring project inspection → Toolkit Debugger
+## 14.9 Manual recurring project inspection → Toolkit Debugger
 
 **Revision:** Repeated checks for package, assembly, asset, scene, ID, and toolkit configuration errors were formalized into a read-only editor diagnostic tool.
 
@@ -553,7 +635,7 @@ The final architecture differs from the earlier project-specific implementation 
 
 ---
 
-# 14. Non-goals
+# 15. Non-goals
 
 The toolkit does not attempt to provide a complete game framework. The following remain intentionally project-owned unless promoted into a reusable package later:
 
@@ -563,7 +645,7 @@ The toolkit does not attempt to provide a complete game framework. The following
 - quest/game-specific objectives
 - room locking and encounter triggers
 - cameras
-- narrative flow
+- project-specific narrative consequences and progression rules
 - project-specific UI screens and art direction
 - networking policy
 - project-specific object pooling policy
