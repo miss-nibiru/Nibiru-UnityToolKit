@@ -138,12 +138,22 @@ A successful assignment run should retain/capture both:
 1. `NIBIRU_DEVELOPMENT_BUILD_RESULT result=Succeeded ...`
 2. `NIBIRU_STRESS_RESULT ...`
 
-## Current execution status
+## Successful Development Build result
 
-**Prepared, but not executed in the assistant execution environment.**
+The controlled macOS Development Build was executed successfully on the project development machine.
 
-The environment used to make these repository changes does not contain a Unity Editor installation, and the repository does not currently contain an existing GitHub Actions Unity build workflow that can be used instead. Unity Development Builds require the Unity Editor and a valid Unity licensing/build environment.
+```text
+NIBIRU_DEVELOPMENT_BUILD_RESULT result=Succeeded duration=00:00:57.7731800 sizeBytes=326401303 errors=0 warnings=0 output=Builds/AssignmentStress/NibiruToolkitStress.app
+```
 
-For that reason, no successful build result, runtime frame count, or output-size number is fabricated in this document.
+Recorded result:
 
-The repository now contains the deterministic build command and stress workload required to run the Development Build unchanged on the project's normal Unity machine.
+- platform: **macOS**;
+- result: **Succeeded**;
+- build duration: **00:00:57.7731800**;
+- build size: **326,401,303 bytes**;
+- build errors: **0**;
+- build warnings: **0**;
+- output: `Builds/AssignmentStress/NibiruToolkitStress.app`.
+
+This confirms that the controlled stress scenario can be packaged successfully as a Unity Development Build using the real toolkit demo scene and Combat runtime.
