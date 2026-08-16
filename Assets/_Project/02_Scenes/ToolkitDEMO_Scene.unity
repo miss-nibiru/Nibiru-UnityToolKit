@@ -720,7 +720,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ec33e1f2895fc47b48c28f25dcccbe1a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: MissNibiru.Core::MissNibiru.Core.Health.HealthComponent
-  maxHealth: 0
+  maxHealth: 100
 --- !u!1 &1463956261
 GameObject:
   m_ObjectHideFlags: 0
