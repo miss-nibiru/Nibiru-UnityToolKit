@@ -2,7 +2,7 @@
 
 Hi! This is basically my little collection of Unity systems that I kept making over and over again, so I finally pulled them out of my projects and turned them into reusable packages.
 
-The idea is pretty simple: if I make another game and need health, projectiles, enemy movement, waves, information tracking, etc. I should not have to rebuild the whole thing from zero.
+The idea is pretty simple: if I make another game and need health, projectiles, enemy movement, waves, information tracking, dialogue, etc. I should not have to rebuild the whole thing from zero.
 
 Most of the reusable stuff lives in `Packages/com.missnibiru.*`.
 
@@ -115,6 +115,35 @@ There is also an Information Organizer editor tool for actually working with the
 
 ---
 
+### Narrative
+`com.missnibiru.narrative`
+
+This is the dialogue / visual novel package.
+
+I wanted something that could handle normal conversations, branching dialogue, visual-novel scenes, choices, conditions, variables, flags, save/resume, and gameplay events without being glued to one specific game.
+
+The main editor tool is:
+
+**Tools > Miss Nibiru > Visual Novel Builder**
+
+The builder lets me make the story as a node graph, create reusable characters/emotions/variables/events, set up presentation, preview routes, and validate the story without living inside a giant dialogue script.
+
+It also imports SugarCube `.twee` files, which is useful for bringing Twine stories into Unity instead of manually rebuilding every passage and connection.
+
+At runtime the main pieces are `NarrativeRunner` and `NarrativePresenter`.
+
+The runner handles story execution/state. The presenter handles the default runtime dialogue UI. A game can use the supplied presentation or build its own around the same story data.
+
+The important extension points are the story data and gameplay event hooks. Narrative owns the conversation/branching state, but things like quests, inventory, doors, enemy AI, or whatever happens because of a conversation still belong to the actual game.
+
+Variables are generic too, so they are not just "dialogue variables." They can hold things like relationship values, reputation, alchemy resources, route state, or other narrative-facing gameplay values.
+
+Package README:
+
+[`Packages/com.missnibiru.narrative/README.md`](Packages/com.missnibiru.narrative/README.md)
+
+---
+
 ### Waves
 `com.missnibiru.waves`
 
@@ -196,7 +225,9 @@ New pattern? New pattern asset.
 
 New spawnable? New definition.
 
-**If the behaviour genuinely works differently, implement the interface.**
+New dialogue content? New narrative/story assets.
+
+**If the behaviour genuinely works differently, implement/use the extension point instead of rewriting the whole system.**
 
 New movement style? `IEnemyMovementBehaviour`.
 
@@ -206,6 +237,8 @@ New save backend for collected information? `IInformationCollectionStore`.
 
 New wave spawning backend? `IWaveSpawner`.
 
+New gameplay consequence from dialogue? React to a `NarrativeEvent` or runner event instead of hardcoding the game system into Narrative.
+
 That is basically the whole architecture idea: extend the small part that changes instead of copying and rewriting an entire system.
 
 ## Demo stuff
@@ -214,7 +247,7 @@ The project also has examples under:
 
 `Assets/_Project/00_NibiruToolKit`
 
-There are examples for health, state machines, patterns, projectile attacks, information and waves.
+There are examples for health, state machines, patterns, projectile attacks, information and waves, plus the reusable packages can be tested independently through their own assets/tools.
 
 The main integration scene is:
 
