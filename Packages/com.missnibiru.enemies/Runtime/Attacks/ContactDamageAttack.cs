@@ -1,6 +1,7 @@
 using System;
 using MissNibiru.Core.Health;
 using MissNibiru.Enemies.Actor;
+using MissNibiru.Combat.Damage;
 using UnityEngine;
 
 namespace MissNibiru.Enemies.Attacks

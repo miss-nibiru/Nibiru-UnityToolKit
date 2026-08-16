@@ -1,9 +1,10 @@
 using System;
 using MissNibiru.Core.Health;
-using MissNibiru.Enemies.Attacks;
+using MissNibiru.Combat.Damage;
 using UnityEngine;
 
-namespace MissNibiru.Enemies.Projectiles
+namespace MissNibiru.Combat.Projectiles
+
 {
     public sealed class ProjectileActor :
         MonoBehaviour

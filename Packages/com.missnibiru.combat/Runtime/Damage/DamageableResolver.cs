@@ -1,7 +1,8 @@
 using MissNibiru.Core.Health;
 using UnityEngine;
 
-namespace MissNibiru.Enemies.Attacks
+namespace MissNibiru.Combat.Damage
+
 {
     public static class DamageableResolver
     {

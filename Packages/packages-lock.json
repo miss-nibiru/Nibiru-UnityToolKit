@@ -1,5 +1,13 @@
 {
   "dependencies": {
+    "com.missnibiru.combat": {
+      "version": "file:com.missnibiru.combat",
+      "depth": 0,
+      "source": "embedded",
+      "dependencies": {
+        "com.missnibiru.core": "0.1.0"
+      }
+    },
     "com.missnibiru.core": {
       "version": "file:com.missnibiru.core",
       "depth": 0,
@@ -11,7 +19,8 @@
       "depth": 0,
       "source": "embedded",
       "dependencies": {
-        "com.missnibiru.core": "0.1.0"
+        "com.missnibiru.core": "0.1.0",
+        "com.missnibiru.combat": "0.1.0"
       }
     },
     "com.missnibiru.ui": {

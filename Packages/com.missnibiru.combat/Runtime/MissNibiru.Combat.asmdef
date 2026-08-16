@@ -1,11 +1,9 @@
 {
-	"name": "MissNibiru.Enemies",
-	"rootNamespace": "MissNibiru.Enemies",
+	"name": "MissNibiru.Combat",
+	"rootNamespace": "MissNibiru.Combat",
 	"references": [
-		"MissNibiru.Core",
-		"MissNibiru.Combat"
+		"MissNibiru.Core"
 	],
-	
 	"includePlatforms": [],
 	"excludePlatforms": [],
 	"allowUnsafeCode": false,

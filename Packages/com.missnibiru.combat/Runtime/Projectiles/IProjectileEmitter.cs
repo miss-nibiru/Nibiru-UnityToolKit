@@ -1,4 +1,5 @@
-namespace MissNibiru.Enemies.Projectiles
+namespace MissNibiru.Combat.Projectiles
+
 {
     public interface IProjectileEmitter
     {

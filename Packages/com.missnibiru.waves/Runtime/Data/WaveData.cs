@@ -4,7 +4,7 @@ namespace MissNibiru.Waves.Data
 {
     [CreateAssetMenu(
         fileName = "WaveData",
-        menuName = "Nibiru/Waves/Wave Data")]
+        menuName = "Miss Nibiru/Waves/Wave Data")]
     public sealed class WaveData : ScriptableObject
     {
         [SerializeField]

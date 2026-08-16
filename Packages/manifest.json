@@ -1,6 +1,7 @@
 {
   "dependencies": {
     "com.missnibiru.core": "file:com.missnibiru.core",
+    "com.missnibiru.combat": "file:com.missnibiru.combat",
     "com.unity.ai.navigation": "2.0.12",
     "com.unity.collab-proxy": "2.12.4",
     "com.unity.ide.rider": "3.0.39",
@@ -42,15 +43,15 @@
     "com.unity.modules.unitywebrequestwww": "1.0.0",
     "com.unity.modules.vectorgraphics": "1.0.0",
     "com.unity.modules.vehicles": "1.0.0",
-        "com.unity.modules.video": "1.0.0",
+    "com.unity.modules.video": "1.0.0",
     "com.unity.modules.vr": "1.0.0",
     "com.unity.modules.wind": "1.0.0",
     "com.unity.modules.xr": "1.0.0"
   },
-    "testables": [
+  "testables": [
     "com.missnibiru.core",
     "com.missnibiru.waves",
-"com.missnibiru.enemies"
+    "com.missnibiru.combat",
+    "com.missnibiru.enemies"
   ]
-
 }

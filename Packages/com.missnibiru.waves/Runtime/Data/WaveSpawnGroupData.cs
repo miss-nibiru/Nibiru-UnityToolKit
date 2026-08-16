@@ -4,7 +4,7 @@ namespace MissNibiru.Waves.Data
 {
     [CreateAssetMenu(
         fileName = "WaveSpawnGroupData",
-        menuName = "Nibiru/Waves/Spawn Group Data")]
+        menuName = "Miss Nibiru/Waves/Spawn Group Data")]
     public sealed class WaveSpawnGroupData : ScriptableObject
     {
         public enum SpawnPattern

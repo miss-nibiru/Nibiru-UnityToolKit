@@ -1,7 +1,8 @@
 using System;
 using UnityEngine;
 
-namespace MissNibiru.Enemies.Projectiles
+namespace MissNibiru.Combat.Projectiles
+
 {
     public sealed class PrefabProjectileEmitter :
         MonoBehaviour,

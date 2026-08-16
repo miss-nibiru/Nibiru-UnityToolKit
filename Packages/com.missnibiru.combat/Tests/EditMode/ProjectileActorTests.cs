@@ -1,9 +1,23 @@
-using MissNibiru.Enemies.Projectiles;
+using MissNibiru.Combat.Projectiles;
+using MissNibiru.Core.Health;
 using NUnit.Framework;
 using UnityEngine;
 
-namespace MissNibiru.Enemies.Tests
+namespace MissNibiru.Combat.Tests
+
 {
+    public sealed class CombatDamageableSpy :
+        MonoBehaviour,
+        IDamageable
+    {
+        public float TotalDamage { get; private set; }
+
+        public void TakeDamage(float amount)
+        {
+            TotalDamage += amount;
+        }
+    }
+    
     public sealed class ProjectileActorTests
     {
         private GameObject _ownerObject;
@@ -11,7 +25,7 @@ namespace MissNibiru.Enemies.Tests
         private GameObject _targetObject;
 
         private ProjectileActor _projectile;
-        private DamageableSpy _damageable;
+        private CombatDamageableSpy _damageable;
 
         [SetUp]
         public void SetUp()
@@ -31,7 +45,7 @@ namespace MissNibiru.Enemies.Tests
 
             _damageable =
                 _targetObject.AddComponent<
-                    DamageableSpy>();
+                    CombatDamageableSpy>();
         }
 
         [TearDown]

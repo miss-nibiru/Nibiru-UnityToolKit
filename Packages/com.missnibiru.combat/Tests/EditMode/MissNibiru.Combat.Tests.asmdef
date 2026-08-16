@@ -1,12 +1,10 @@
 {
-	"name": "MissNibiru.Enemies.Tests",
-	"rootNamespace": "MissNibiru.Enemies.Tests",
+	"name": "MissNibiru.Combat.Tests",
+	"rootNamespace": "MissNibiru.Combat.Tests",
 	"references": [
 		"MissNibiru.Core",
-		"MissNibiru.Combat",
-		"MissNibiru.Enemies"
+		"MissNibiru.Combat"
 	],
-	
 	"includePlatforms": [
 		"Editor"
 	],
