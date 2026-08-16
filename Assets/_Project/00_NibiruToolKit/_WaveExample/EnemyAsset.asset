@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: EnemyAsset
   m_EditorClassIdentifier: MissNibiru.Waves::MissNibiru.Waves.Layouts.SpawnableDefinition
   displayName: 
-  prefab: {fileID: 0}
-  icon: {fileID: 0}
+  prefab: {fileID: 4138848940024122892, guid: 2245b4524d0704f8595f09e27c49b14f, type: 3}
+  icon: {fileID: 10911, guid: 0000000000000000f000000000000000, type: 0}
   kind: 0
   tags: []
   gridFootprint: {x: 1, y: 1}

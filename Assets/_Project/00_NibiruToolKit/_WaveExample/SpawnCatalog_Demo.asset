@@ -12,5 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8977e57be6ad4412a75161a64f7c1ed3, type: 3}
   m_Name: SpawnCatalog_Demo
   m_EditorClassIdentifier: MissNibiru.Waves::MissNibiru.Waves.Layouts.SpawnCatalog
-  spawnables: []
+  spawnables:
+  - {fileID: 11400000, guid: 56c17d3d671854362bbbe77f8f9d071a, type: 2}
   formations: []

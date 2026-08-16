@@ -10,11 +10,20 @@ namespace MissNibiru.Waves.Editor
         private const int Radius = 4;
         private const int GridSize = Radius * 2 + 1;
         private const float CellSize = 30f;
+        private const string BrandBannerPath =
+            "Packages/com.missnibiru.core/Editor/Branding/" +
+            "NibiruMainBanner.png";
+
+        private static readonly Color HeaderColour =
+            new Color(0.11f, 0.075f, 0.17f);
 
         [SerializeField]
         private SpawnFormationDefinition formation;
 
         private string _displayName;
+        private Texture2D _brandBanner;
+        private GUIStyle _headerTitle;
+        private GUIStyle _headerSubtitle;
 
         public static void Open(SpawnFormationDefinition target)
         {
@@ -27,19 +36,25 @@ namespace MissNibiru.Waves.Editor
             window.formation = target;
             window._displayName = target.DisplayName;
             window.titleContent = new GUIContent("Formation Designer");
-            window.minSize = new Vector2(340f, 445f);
-            window.maxSize = new Vector2(520f, 620f);
+            window.minSize = new Vector2(380f, 570f);
+            window.maxSize = new Vector2(620f, 780f);
             window.Show();
         }
 
         private void OnEnable()
         {
+            _brandBanner = AssetDatabase.LoadAssetAtPath<Texture2D>(
+                BrandBannerPath);
+
             if (formation != null)
                 _displayName = formation.DisplayName;
         }
 
         private void OnGUI()
         {
+            EnsureStyles();
+            DrawHeader();
+
             if (formation == null)
             {
                 EditorGUILayout.HelpBox(
@@ -48,10 +63,7 @@ namespace MissNibiru.Waves.Editor
                 return;
             }
 
-            GUILayout.Label("Formation Designer", EditorStyles.boldLabel);
-            GUILayout.Label(
-                "Click cells to toggle spawn points.",
-                EditorStyles.miniLabel);
+            EditorGUILayout.Space(4f);
 
             string nextName = EditorGUILayout.TextField(
                 "Name",
@@ -81,6 +93,69 @@ namespace MissNibiru.Waves.Editor
                     SceneView.RepaintAll();
                 }
             }
+        }
+
+        private void DrawHeader()
+        {
+            Rect header = GUILayoutUtility.GetRect(
+                0f,
+                136f,
+                GUILayout.ExpandWidth(true));
+
+            EditorGUI.DrawRect(header, HeaderColour);
+
+            Rect banner = new Rect(
+                header.x + 8f,
+                header.y + 4f,
+                header.width - 16f,
+                96f);
+
+            if (_brandBanner != null)
+            {
+                GUI.DrawTexture(
+                    banner,
+                    _brandBanner,
+                    ScaleMode.ScaleToFit,
+                    true);
+            }
+
+            GUI.Label(
+                new Rect(
+                    header.x + 8f,
+                    header.y + 99f,
+                    header.width - 16f,
+                    23f),
+                "Formation Designer",
+                _headerTitle);
+
+            GUI.Label(
+                new Rect(
+                    header.x + 8f,
+                    header.y + 120f,
+                    header.width - 16f,
+                    16f),
+                "Click cells to toggle spawn points.",
+                _headerSubtitle);
+        }
+
+        private void EnsureStyles()
+        {
+            if (_headerTitle != null)
+                return;
+
+            _headerTitle = new GUIStyle(EditorStyles.boldLabel)
+            {
+                alignment = TextAnchor.MiddleCenter,
+                fontSize = 16
+            };
+            _headerTitle.normal.textColor = Color.white;
+
+            _headerSubtitle = new GUIStyle(EditorStyles.miniLabel)
+            {
+                alignment = TextAnchor.MiddleCenter
+            };
+            _headerSubtitle.normal.textColor =
+                new Color(0.78f, 0.74f, 0.84f);
         }
 
         private void DrawPresetButtons()

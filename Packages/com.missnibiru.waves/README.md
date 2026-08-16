@@ -6,7 +6,7 @@ spawning real objects while editing.
 
 ## Open the tool
 
-Open **Window > Miss Nibiru > Wave Layout Builder**.
+Open **Tools > Miss Nibiru > Wave Layout Builder**.
 
 ## Quick setup
 
@@ -14,7 +14,8 @@ Open **Window > Miss Nibiru > Wave Layout Builder**.
 2. Create a `SpawnCatalog` from **New Catalog**.
 3. Add `SpawnableDefinition` assets for enemies, hazards, pickups or other
    prefabs.
-4. Set each spawnable's prefab and grid footprint.
+4. Use the contextual **Edit Enemy**, **Edit Hazard**, **Edit Pickup** or
+   **Edit Spawnable** tab to set its prefab, icon, tags and footprint.
 5. Drag spawnables onto the active wave grid.
 6. Add a `WaveRunner` and `WaveSpawner` to the scene.
 7. Select the runner and an Origin transform in the tool.
@@ -33,6 +34,13 @@ The Origin's position and rotation map the editor grid into world space.
 
 When an authored layout is assigned, `StartSequence()` uses it automatically.
 No second wave runner or competing runtime system is introduced.
+
+## Editing spawnables
+
+Creating a palette asset opens its editor automatically. Single-click an
+existing palette asset to select it, then use the contextual edit button or
+double-click it. Placement timing and position remain in the Builder inspector;
+the reusable spawnable asset is edited in its own workspace.
 
 ## Formations
 

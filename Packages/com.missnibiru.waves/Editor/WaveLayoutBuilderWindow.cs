@@ -14,6 +14,7 @@ namespace MissNibiru.Waves.Editor
         private enum Page
         {
             Builder,
+            EditSpawnable,
             FAQ
         }
 
@@ -30,6 +31,9 @@ namespace MissNibiru.Waves.Editor
             "MissNibiru.Waves.Spawnable";
         private const string FormationDragKey =
             "MissNibiru.Waves.Formation";
+        private const string BrandBannerPath =
+            "Packages/com.missnibiru.core/Editor/Branding/" +
+            "NibiruMainBanner.png";
 
         private static readonly Color HeaderColour =
             new Color(0.11f, 0.075f, 0.17f);
@@ -98,6 +102,7 @@ namespace MissNibiru.Waves.Editor
 
         private Vector2 _paletteScroll;
         private Vector2 _inspectorScroll;
+        private Vector2 _spawnableEditorScroll;
         private Vector2 _faqScroll;
         private Vector2Int _moveStartCell;
         private bool _moving;
@@ -113,6 +118,7 @@ namespace MissNibiru.Waves.Editor
         private GUIStyle _paletteItem;
         private GUIStyle _wrap;
         private GUIStyle _centeredMini;
+        private Texture2D _brandBanner;
 
         public static WaveLayoutBuilderWindow ActiveWindow
         {
@@ -140,6 +146,8 @@ namespace MissNibiru.Waves.Editor
         {
             ActiveWindow = this;
             Undo.undoRedoPerformed += HandleUndoRedo;
+            _brandBanner = AssetDatabase.LoadAssetAtPath<Texture2D>(
+                BrandBannerPath);
 
             if (runner != null)
             {
@@ -176,6 +184,8 @@ namespace MissNibiru.Waves.Editor
 
             if (page == Page.FAQ)
                 DrawFaq();
+            else if (page == Page.EditSpawnable)
+                DrawSpawnableEditor();
             else
                 DrawBuilder();
 
@@ -186,39 +196,72 @@ namespace MissNibiru.Waves.Editor
         {
             Rect header = GUILayoutUtility.GetRect(
                 0f,
-                72f,
+                104f,
                 GUILayout.ExpandWidth(true));
 
             EditorGUI.DrawRect(header, HeaderColour);
 
+            float bannerWidth = Mathf.Clamp(
+                header.width * 0.30f,
+                220f,
+                310f);
+
+            Rect banner = new Rect(
+                header.x + 8f,
+                header.y + 4f,
+                bannerWidth,
+                96f);
+
+            if (_brandBanner != null)
+            {
+                GUI.DrawTexture(
+                    banner,
+                    _brandBanner,
+                    ScaleMode.ScaleToFit,
+                    true);
+            }
+
+            float titleX = _brandBanner == null
+                ? header.x + 16f
+                : banner.xMax + 14f;
+
+            Rect tabs = new Rect(
+                header.xMax - 284f,
+                header.y + 39f,
+                268f,
+                27f);
+
+            float titleWidth = Mathf.Max(
+                90f,
+                tabs.x - titleX - 10f);
+
             GUI.Label(
                 new Rect(
-                    header.x + 16f,
-                    header.y + 9f,
-                    header.width - 180f,
+                    titleX,
+                    header.y + 23f,
+                    titleWidth,
                     28f),
                 "Wave Layout Builder",
                 _headerTitle);
 
             GUI.Label(
                 new Rect(
-                    header.x + 17f,
-                    header.y + 40f,
-                    header.width - 180f,
+                    titleX + 1f,
+                    header.y + 55f,
+                    titleWidth,
                     20f),
                 "Design reusable spawn encounters.",
                 _headerSubtitle);
 
-            Rect tabs = new Rect(
-                header.xMax - 166f,
-                header.y + 20f,
-                150f,
-                25f);
-
             page = (Page)GUI.Toolbar(
                 tabs,
                 (int)page,
-                new[] { "Builder", "FAQ" });
+                new[]
+                {
+                    "Builder",
+                    SpawnableEditorTabLabel(),
+                    "FAQ"
+                });
         }
 
         private void DrawBuilder()
@@ -251,6 +294,260 @@ namespace MissNibiru.Waves.Editor
                 {
                     DrawInspector();
                 }
+            }
+        }
+
+        private void DrawSpawnableEditor()
+        {
+            using (EditorGUILayout.ScrollViewScope scroll =
+                   new EditorGUILayout.ScrollViewScope(
+                       _spawnableEditorScroll,
+                       GUILayout.ExpandHeight(true)))
+            {
+                _spawnableEditorScroll = scroll.scrollPosition;
+                EditorGUILayout.Space(10f);
+
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    GUILayout.FlexibleSpace();
+
+                    float editorWidth = Mathf.Min(
+                        720f,
+                        Mathf.Max(420f, position.width - 48f));
+
+                    using (new EditorGUILayout.VerticalScope(
+                               EditorStyles.helpBox,
+                               GUILayout.Width(editorWidth)))
+                    {
+                        GUILayout.Label(
+                            SpawnableEditorHeading(),
+                            _headerTitle);
+
+                        SpawnableDefinition chosen =
+                            (SpawnableDefinition)
+                            EditorGUILayout.ObjectField(
+                                new GUIContent(
+                                    "Asset",
+                                    "Select a spawnable."),
+                                selectedPaletteSpawnable,
+                                typeof(SpawnableDefinition),
+                                false);
+
+                        if (chosen != selectedPaletteSpawnable)
+                        {
+                            selectedPaletteSpawnable = chosen;
+
+                            if (chosen != null)
+                                Selection.activeObject = chosen;
+                        }
+
+                        if (selectedPaletteSpawnable == null)
+                        {
+                            EditorGUILayout.HelpBox(
+                                "Select or create a spawnable in Builder.",
+                                MessageType.Info);
+
+                            if (GUILayout.Button("Back to Builder"))
+                                page = Page.Builder;
+
+                            GUILayout.FlexibleSpace();
+                            return;
+                        }
+
+                        EditorGUILayout.Space(4f);
+                        DrawSpawnablePreview(selectedPaletteSpawnable);
+                        EditorGUILayout.Space(6f);
+
+                        SerializedObject serialized =
+                            new SerializedObject(
+                                selectedPaletteSpawnable);
+
+                        serialized.Update();
+
+                        EditorGUILayout.PropertyField(
+                            serialized.FindProperty("displayName"),
+                            new GUIContent(
+                                "Display Name",
+                                "Name shown in tools."));
+
+                        EditorGUILayout.PropertyField(
+                            serialized.FindProperty("prefab"),
+                            new GUIContent(
+                                "Prefab",
+                                "Spawned at runtime."));
+
+                        EditorGUILayout.PropertyField(
+                            serialized.FindProperty("icon"),
+                            new GUIContent(
+                                "Icon",
+                                "Shown on grid."));
+
+                        EditorGUILayout.PropertyField(
+                            serialized.FindProperty("kind"),
+                            new GUIContent(
+                                "Kind",
+                                "Used by filters."));
+
+                        EditorGUILayout.PropertyField(
+                            serialized.FindProperty("tags"),
+                            new GUIContent(
+                                "Tags",
+                                "Labels for search."),
+                            true);
+
+                        EditorGUILayout.PropertyField(
+                            serialized.FindProperty("gridFootprint"),
+                            new GUIContent(
+                                "Grid Footprint",
+                                "Cells occupied."));
+
+                        EditorGUILayout.PropertyField(
+                            serialized.FindProperty("footprintPivot"),
+                            new GUIContent(
+                                "Footprint Pivot",
+                                "Anchor cell."));
+
+                        if (serialized.ApplyModifiedProperties())
+                        {
+                            EditorUtility.SetDirty(
+                                selectedPaletteSpawnable);
+                            SetStatus(
+                                "Spawnable updated.",
+                                WaveLayoutValidationSeverity.Success);
+                            SceneView.RepaintAll();
+                        }
+
+                        if (selectedPaletteSpawnable.Prefab == null)
+                        {
+                            EditorGUILayout.HelpBox(
+                                "Assign the prefab spawned at runtime.",
+                                MessageType.Warning);
+                        }
+
+                        EditorGUILayout.Space(6f);
+
+                        using (new EditorGUILayout.HorizontalScope())
+                        {
+                            GUI.enabled =
+                                selectedPaletteSpawnable.Prefab != null;
+
+                            if (GUILayout.Button(
+                                    new GUIContent(
+                                        "Open Prefab",
+                                        "Edit prefab components.")))
+                            {
+                                AssetDatabase.OpenAsset(
+                                    selectedPaletteSpawnable.Prefab);
+                            }
+
+                            GUI.enabled = true;
+
+                            if (GUILayout.Button("Locate Asset"))
+                            {
+                                Selection.activeObject =
+                                    selectedPaletteSpawnable;
+                                EditorGUIUtility.PingObject(
+                                    selectedPaletteSpawnable);
+                            }
+
+                            if (GUILayout.Button("Save"))
+                            {
+                                EditorUtility.SetDirty(
+                                    selectedPaletteSpawnable);
+                                AssetDatabase.SaveAssets();
+                                SetStatus(
+                                    "Spawnable saved.",
+                                    WaveLayoutValidationSeverity.Success);
+                            }
+                        }
+
+                        if (GUILayout.Button("Back to Builder"))
+                            page = Page.Builder;
+                    }
+
+                    GUILayout.FlexibleSpace();
+                }
+            }
+        }
+
+        private void DrawSpawnablePreview(
+            SpawnableDefinition spawnable)
+        {
+            Texture preview = spawnable.Icon == null
+                ? null
+                : spawnable.Icon.texture;
+
+            if (preview == null && spawnable.Prefab != null)
+            {
+                preview = AssetPreview.GetAssetPreview(
+                    spawnable.Prefab);
+
+                if (preview == null)
+                    preview = AssetPreview.GetMiniThumbnail(
+                        spawnable.Prefab);
+
+                if (AssetPreview.IsLoadingAssetPreview(
+                        spawnable.Prefab.GetInstanceID()))
+                {
+                    Repaint();
+                }
+            }
+
+            Rect previewRect = GUILayoutUtility.GetRect(
+                0f,
+                128f,
+                GUILayout.ExpandWidth(true));
+
+            EditorGUI.DrawRect(
+                previewRect,
+                new Color(0.08f, 0.06f, 0.11f));
+
+            if (preview != null)
+            {
+                GUI.DrawTexture(
+                    previewRect,
+                    preview,
+                    ScaleMode.ScaleToFit,
+                    true);
+            }
+            else
+            {
+                GUI.Label(
+                    previewRect,
+                    "No preview",
+                    _centeredMini);
+            }
+        }
+
+        private string SpawnableEditorTabLabel()
+        {
+            return "Edit " + SpawnableKindLabel();
+        }
+
+        private string SpawnableEditorHeading()
+        {
+            if (selectedPaletteSpawnable == null)
+                return "Edit Spawnable";
+
+            return SpawnableEditorTabLabel() + ": " +
+                   selectedPaletteSpawnable.DisplayName;
+        }
+
+        private string SpawnableKindLabel()
+        {
+            if (selectedPaletteSpawnable == null)
+                return "Spawnable";
+
+            switch (selectedPaletteSpawnable.Kind)
+            {
+                case SpawnableKind.Enemy:
+                    return "Enemy";
+                case SpawnableKind.Hazard:
+                    return "Hazard";
+                case SpawnableKind.Pickup:
+                    return "Pickup";
+                default:
+                    return "Spawnable";
             }
         }
 
@@ -398,6 +695,15 @@ namespace MissNibiru.Waves.Editor
                     "Filter",
                     kindFilter,
                     filters);
+
+                if (selectedPaletteSpawnable != null &&
+                    GUILayout.Button(
+                        new GUIContent(
+                            SpawnableEditorTabLabel(),
+                            "Edit selected asset.")))
+                {
+                    page = Page.EditSpawnable;
+                }
             }
 
             using (EditorGUILayout.ScrollViewScope scroll =
@@ -453,6 +759,10 @@ namespace MissNibiru.Waves.Editor
                 {
                     selectedPaletteSpawnable = spawnable;
                     Selection.activeObject = spawnable;
+
+                    if (current.clickCount > 1)
+                        page = Page.EditSpawnable;
+
                     current.Use();
                     Repaint();
                 }
@@ -1340,13 +1650,27 @@ namespace MissNibiru.Waves.Editor
             {
                 if (palettePage == PalettePage.Formations &&
                     selectedFormation != null)
+                {
                     DrawSelectedFormation();
+                }
                 else if (selectedPaletteSpawnable != null)
-                    DrawSpawnableDefinition();
+                {
+                    EditorGUILayout.HelpBox(
+                        "A palette asset is selected.",
+                        MessageType.Info);
+
+                    if (GUILayout.Button(
+                            SpawnableEditorTabLabel()))
+                    {
+                        page = Page.EditSpawnable;
+                    }
+                }
                 else
+                {
                     EditorGUILayout.HelpBox(
                         "Select a grid placement.",
                         MessageType.Info);
+                }
 
                 return;
             }
@@ -1516,45 +1840,6 @@ namespace MissNibiru.Waves.Editor
 
                 if (GUILayout.Button("Delete"))
                     DeleteSelected();
-            }
-        }
-
-        private void DrawSpawnableDefinition()
-        {
-            GUILayout.Label(
-                selectedPaletteSpawnable.DisplayName,
-                EditorStyles.miniBoldLabel);
-
-            SerializedObject serialized =
-                new SerializedObject(selectedPaletteSpawnable);
-
-            serialized.Update();
-            EditorGUILayout.PropertyField(
-                serialized.FindProperty("displayName"));
-            EditorGUILayout.PropertyField(
-                serialized.FindProperty("prefab"));
-            EditorGUILayout.PropertyField(
-                serialized.FindProperty("icon"));
-            EditorGUILayout.PropertyField(
-                serialized.FindProperty("kind"));
-            EditorGUILayout.PropertyField(
-                serialized.FindProperty("tags"),
-                true);
-            EditorGUILayout.PropertyField(
-                serialized.FindProperty("gridFootprint"));
-            EditorGUILayout.PropertyField(
-                serialized.FindProperty("footprintPivot"));
-
-            if (serialized.ApplyModifiedProperties())
-            {
-                EditorUtility.SetDirty(selectedPaletteSpawnable);
-                SceneView.RepaintAll();
-            }
-
-            if (GUILayout.Button("Locate Asset"))
-            {
-                Selection.activeObject = selectedPaletteSpawnable;
-                EditorGUIUtility.PingObject(selectedPaletteSpawnable);
             }
         }
 
@@ -1952,6 +2237,11 @@ namespace MissNibiru.Waves.Editor
             EditorUtility.SetDirty(layout.Catalog);
             selectedPaletteSpawnable = created;
             palettePage = PalettePage.Spawnables;
+            Selection.activeObject = created;
+            page = Page.EditSpawnable;
+            SetStatus(
+                "Spawnable created.",
+                WaveLayoutValidationSeverity.Success);
         }
 
         private void CreateFormation()

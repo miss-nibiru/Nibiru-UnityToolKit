@@ -50,6 +50,9 @@ namespace MissNibiru.Information.Editor
 
         private const string PageLimitPreference =
             "MissNibiru.InformationOrganizer.PageLimit";
+        private const string BrandBannerPath =
+            "Packages/com.missnibiru.core/Editor/Branding/" +
+            "NibiruMainBanner.png";
 
         private static readonly Color HeaderColour =
             new Color(0.12f, 0.10f, 0.18f);
@@ -139,6 +142,7 @@ namespace MissNibiru.Information.Editor
         private GUIStyle selectedEntryButtonStyle;
         private GUIStyle wrapLabelStyle;
         private GUIStyle previewTitleStyle;
+        private Texture2D brandBanner;
 
         [MenuItem(
             "Tools/Miss Nibiru/Information Organizer")]
@@ -160,6 +164,9 @@ namespace MissNibiru.Information.Editor
 
         private void OnEnable()
         {
+            brandBanner = AssetDatabase.LoadAssetAtPath<Texture2D>(
+                BrandBannerPath);
+
             summaryWordLimit = EditorPrefs.GetInt(
                 SummaryLimitPreference,
                 summaryWordLimit);
@@ -212,26 +219,50 @@ namespace MissNibiru.Information.Editor
         {
             Rect header = GUILayoutUtility.GetRect(
                 0f,
-                66f,
+                104f,
                 GUILayout.ExpandWidth(true));
 
             EditorGUI.DrawRect(header, HeaderColour);
 
+            float bannerWidth = Mathf.Clamp(
+                header.width * 0.30f,
+                220f,
+                310f);
+
+            Rect banner = new Rect(
+                header.x + 8f,
+                header.y + 4f,
+                bannerWidth,
+                96f);
+
+            if (brandBanner != null)
+            {
+                GUI.DrawTexture(
+                    banner,
+                    brandBanner,
+                    ScaleMode.ScaleToFit,
+                    true);
+            }
+
+            float titleX = brandBanner == null
+                ? header.x + 16f
+                : banner.xMax + 14f;
+
             Rect title = new Rect(
-                header.x + 16f,
-                header.y + 10f,
-                header.width - 150f,
+                titleX,
+                header.y + 23f,
+                header.xMax - titleX - 140f,
                 26f);
 
             Rect subtitle = new Rect(
-                header.x + 16f,
-                header.y + 38f,
-                header.width - 150f,
+                titleX,
+                header.y + 55f,
+                header.xMax - titleX - 140f,
                 20f);
 
             Rect faqButton = new Rect(
                 header.xMax - 118f,
-                header.y + 18f,
+                header.y + 37f,
                 102f,
                 30f);
 

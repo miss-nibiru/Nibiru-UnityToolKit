@@ -26,4 +26,77 @@ MonoBehaviour:
     waitForActiveObjectsToClear: 1
     autoProgress: 1
     despawnActiveObjectsOnCompletion: 0
+    placements:
+    - id: d6f481351ff04e13854d0f7ed9630209
+      enabled: 1
+      spawnable: {fileID: 11400000, guid: 56c17d3d671854362bbbe77f8f9d071a, type: 2}
+      formation: {fileID: 0}
+      cell: {x: 3, y: 3}
+      rotation: 0
+      flipHorizontal: 0
+      flipVertical: 0
+      spawnDelay: 0
+      sequential: 0
+      sequenceInterval: 0.25
+      repetitions: 1
+      repeatInterval: 1
+    - id: acff366b97e24a4da585442192c9c589
+      enabled: 1
+      spawnable: {fileID: 11400000, guid: 56c17d3d671854362bbbe77f8f9d071a, type: 2}
+      formation: {fileID: 0}
+      cell: {x: 5, y: 3}
+      rotation: 0
+      flipHorizontal: 0
+      flipVertical: 0
+      spawnDelay: 0
+      sequential: 0
+      sequenceInterval: 0.25
+      repetitions: 1
+      repeatInterval: 1
+    - id: b7faf7836929470ab5a56446c8178e9e
+      enabled: 1
+      spawnable: {fileID: 11400000, guid: 56c17d3d671854362bbbe77f8f9d071a, type: 2}
+      formation: {fileID: 0}
+      cell: {x: 4, y: 5}
+      rotation: 0
+      flipHorizontal: 0
+      flipVertical: 0
+      spawnDelay: 0
+      sequential: 0
+      sequenceInterval: 0.25
+      repetitions: 1
+      repeatInterval: 1
+    - id: f40f4ef00e3342d58ba751e350df13c2
+      enabled: 1
+      spawnable: {fileID: 11400000, guid: 56c17d3d671854362bbbe77f8f9d071a, type: 2}
+      formation: {fileID: 0}
+      cell: {x: 11, y: 10}
+      rotation: 0
+      flipHorizontal: 0
+      flipVertical: 0
+      spawnDelay: 0
+      sequential: 0
+      sequenceInterval: 0.25
+      repetitions: 1
+      repeatInterval: 1
+    - id: 0859fbbfbb8b476e8212c6a4858f2d72
+      enabled: 1
+      spawnable: {fileID: 11400000, guid: 56c17d3d671854362bbbe77f8f9d071a, type: 2}
+      formation: {fileID: 0}
+      cell: {x: 13, y: 17}
+      rotation: 0
+      flipHorizontal: 0
+      flipVertical: 0
+      spawnDelay: 0
+      sequential: 0
+      sequenceInterval: 0.25
+      repetitions: 1
+      repeatInterval: 1
+  - waveName: Wave 2
+    initialDelay: 0
+    usesDuration: 0
+    duration: 0
+    waitForActiveObjectsToClear: 1
+    autoProgress: 1
+    despawnActiveObjectsOnCompletion: 0
     placements: []

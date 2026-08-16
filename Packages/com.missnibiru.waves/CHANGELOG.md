@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.3.2
+
+- Moved the builder to `Tools > Miss Nibiru` with the other toolkit tools.
+
+## 0.3.1
+
+- Replaced unsupported `Event.actionKey` calls with Unity modifier flags.
+- Made interpolated strings compatible with Unity's C# 9 compiler.
+
 ## 0.3.0
 
 - Added generic spawnable, catalog, formation and layout ScriptableObjects.

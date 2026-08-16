@@ -1,6 +1,6 @@
 {
   "name": "com.missnibiru.waves",
-  "version": "0.3.0",
+  "version": "0.3.3",
   "displayName": "Nibiru Waves",
   "description": "Reusable wave runtime plus a grid-based encounter authoring and spawn calculation tool by Miss Nibiru.",
   "unity": "6000.0",
