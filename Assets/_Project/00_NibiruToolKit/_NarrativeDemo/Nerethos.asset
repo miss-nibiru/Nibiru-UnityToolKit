@@ -2828,7 +2828,7 @@ MonoBehaviour:
   m_Name: Lektryon_Alchemy_Aggressive
   m_EditorClassIdentifier: MissNibiru.Narrative::MissNibiru.Narrative.NarrativeLineNode
   id: lektryon_alchemy_aggressive_line
-  editorPosition: {x: 1680, y: 3150}
+  editorPosition: {x: 2664, y: 2839}
   character: {fileID: 0}
   emotion: {fileID: 0}
   portraitSide: 0
@@ -2888,7 +2888,7 @@ MonoBehaviour:
   m_Name: Imported Story End
   m_EditorClassIdentifier: MissNibiru.Narrative::MissNibiru.Narrative.NarrativeEndNode
   id: end_7488388a
-  editorPosition: {x: 565, y: 260}
+  editorPosition: {x: 2091, y: 305}
   endingId: import_complete
   description: Imported passage ended.
 --- !u!114 &-5737015578586198209
@@ -3205,7 +3205,7 @@ MonoBehaviour:
   m_Name: Castle_Prep
   m_EditorClassIdentifier: MissNibiru.Narrative::MissNibiru.Narrative.NarrativeLineNode
   id: castle_prep_line
-  editorPosition: {x: 2615, y: 2765}
+  editorPosition: {x: 2964, y: 2839}
   character: {fileID: 0}
   emotion: {fileID: 0}
   portraitSide: 0
@@ -7136,7 +7136,7 @@ MonoBehaviour:
   m_Name: Choice
   m_EditorClassIdentifier: MissNibiru.Narrative::MissNibiru.Narrative.NarrativeChoiceNode
   id: choice_36d3dcc8
-  editorPosition: {x: 319, y: 245}
+  editorPosition: {x: 1845, y: 290}
   prompt: Choose a response.
   choices:
   - text: Choice 1
@@ -8795,7 +8795,7 @@ MonoBehaviour:
   m_Name: Main Hall Choices 1
   m_EditorClassIdentifier: MissNibiru.Narrative::MissNibiru.Narrative.NarrativeChoiceNode
   id: main_hall_choices_1
-  editorPosition: {x: 2875, y: 2435}
+  editorPosition: {x: 3000, y: 2339}
   prompt: Choose a response.
   choices:
   - text: Go To Training Grounds
@@ -10791,7 +10791,7 @@ MonoBehaviour:
   m_Name: Line
   m_EditorClassIdentifier: MissNibiru.Narrative::MissNibiru.Narrative.NarrativeLineNode
   id: line_f89b6270
-  editorPosition: {x: 65, y: 260}
+  editorPosition: {x: 1591, y: 305}
   character: {fileID: 0}
   emotion: {fileID: 0}
   portraitSide: 0
@@ -13872,7 +13872,7 @@ MonoBehaviour:
   m_Name: Castle_Prep Choices 1
   m_EditorClassIdentifier: MissNibiru.Narrative::MissNibiru.Narrative.NarrativeChoiceNode
   id: castle_prep_choices_1
-  editorPosition: {x: 2875, y: 2765}
+  editorPosition: {x: 3231, y: 2839}
   prompt: Choose a response.
   choices:
   - text: "\u201CCome in\u201D"
