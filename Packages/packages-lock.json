@@ -23,6 +23,12 @@
         "com.missnibiru.combat": "0.1.0"
       }
     },
+    "com.missnibiru.information": {
+      "version": "file:com.missnibiru.information",
+      "depth": 0,
+      "source": "embedded",
+      "dependencies": {}
+    },
     "com.missnibiru.ui": {
       "version": "file:com.missnibiru.ui",
       "depth": 0,

@@ -1,0 +1,19 @@
+{
+  "name": "com.missnibiru.information",
+  "version": "0.1.0",
+  "displayName": "Nibiru Information Collection",
+  "description": "Reusable information, discovery, classification and collection systems by Miss Nibiru.",
+  "unity": "6000.0",
+  "author": {
+    "name": "Miss Nibiru",
+    "url": "https://github.com/miss-nibiru"
+  },
+  "keywords": [
+    "unity",
+    "toolkit",
+    "information",
+    "discovery",
+    "collection",
+    "items"
+  ]
+}

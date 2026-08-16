@@ -2,6 +2,7 @@
   "dependencies": {
     "com.missnibiru.core": "file:com.missnibiru.core",
     "com.missnibiru.combat": "file:com.missnibiru.combat",
+    "com.missnibiru.information": "file:com.missnibiru.information",
     "com.unity.ai.navigation": "2.0.12",
     "com.unity.collab-proxy": "2.12.4",
     "com.unity.ide.rider": "3.0.39",
@@ -52,6 +53,7 @@
     "com.missnibiru.core",
     "com.missnibiru.waves",
     "com.missnibiru.combat",
-    "com.missnibiru.enemies"
+    "com.missnibiru.enemies",
+    "com.missnibiru.information"
   ]
 }
