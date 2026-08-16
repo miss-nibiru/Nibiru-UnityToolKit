@@ -18,7 +18,10 @@ namespace MissNibiru.Waves.Data
         private GameObject prefab;
 
         [SerializeField]
-        private SpawnPattern[] allowedPatterns;
+        private SpawnPattern[] allowedPatterns =
+        {
+            SpawnPattern.Single
+        };
 
         [SerializeField]
         private string[] spawnPointTags;
@@ -26,29 +29,26 @@ namespace MissNibiru.Waves.Data
         [SerializeField]
         private bool limitTotalSpawns;
 
-        [SerializeField, Min(0)]
-        private int totalSpawnLimit;
+        [SerializeField, Min(1)]
+        private int totalSpawnLimit = 1;
 
-        [SerializeField, Min(0)]
-        private int instancesPerSpawn;
+        [SerializeField, Min(1)]
+        private int instancesPerSpawn = 1;
 
         [SerializeField]
         private bool limitActiveInstances;
 
-        [SerializeField, Min(0)]
-        private int maximumActiveInstances;
+        [SerializeField, Min(1)]
+        private int maximumActiveInstances = 1;
 
         [SerializeField, Min(0f)]
         private float delayBetweenSpawns;
 
         [SerializeField, Min(0f)]
-        private float patternSpacing;
+        private float patternSpacing = 1f;
 
         [SerializeField]
-        private Vector3 lineDirection;
-
-        [SerializeField]
-        private GameObject formationPrefab;
+        private Vector3 lineDirection = Vector3.right;
 
         public GameObject Prefab => prefab;
         public SpawnPattern[] AllowedPatterns => allowedPatterns;
@@ -59,11 +59,12 @@ namespace MissNibiru.Waves.Data
         public int InstancesPerSpawn => instancesPerSpawn;
 
         public bool LimitActiveInstances => limitActiveInstances;
-        public int MaximumActiveInstances => maximumActiveInstances;
+
+        public int MaximumActiveInstances =>
+            maximumActiveInstances;
 
         public float DelayBetweenSpawns => delayBetweenSpawns;
         public float PatternSpacing => patternSpacing;
         public Vector3 LineDirection => lineDirection;
-        public GameObject FormationPrefab => formationPrefab;
     }
 }
